@@ -1,0 +1,110 @@
+{
+    "topic_types": [
+        {
+            "value": "Notification Title",
+            "uri": "org.deepamehta.subscriptions.notification_title",
+            "data_type_uri": "dm4.core.text",
+            "view_config_topics": [
+                {
+                    "type_uri": "dm4.webclient.view_config",
+                    "composite": {
+                        "dm4.webclient.show_in_create_menu": false,
+                        "dm4.webclient.searchable_as_unit": false,
+                        "dm4.webclient.rows": 1
+                    }
+                }
+            ]
+        },
+        {
+            "value": "Notification Body",
+            "uri": "org.deepamehta.subscriptions.notification_body",
+            "data_type_uri": "dm4.core.text",
+            "view_config_topics": [
+                {
+                    "type_uri": "dm4.webclient.view_config",
+                    "composite": {
+                        "dm4.webclient.show_in_create_menu": false,
+                        "dm4.webclient.searchable_as_unit": false,
+                        "dm4.webclient.rows": 1
+                    }
+                }
+            ]
+        },
+        {
+            "value": "Notification",
+            "uri": "org.deepamehta.subscriptions.notification",
+            "data_type_uri": "dm4.core.composite",
+            "assoc_defs": [
+                {
+                    "child_type_uri": "org.deepamehta.subscriptions.notification_title",
+                    "child_cardinality_uri": "dm4.core.one",
+                    "assoc_type_uri": "dm4.core.composition_def"
+                },
+                {
+                    "child_type_uri": "org.deepamehta.subscriptions.notification_body",
+                    "child_cardinality_uri": "dm4.core.one",
+                    "parent_cardinality_uri": "dm4.core.one",
+                    "assoc_type_uri": "dm4.core.aggregation_def"
+                }
+            ],
+            "view_config_topics": [
+                {
+                    "type_uri": "dm4.webclient.view_config",
+                    "composite": {
+                        "dm4.webclient.show_in_create_menu": false,
+                        "dm4.webclient.searchable_as_unit": false,
+                        "dm4.webclient.rows": 1
+                    }
+                }
+            ]
+        },
+        {
+            "value": "Subscription Type",
+            "uri": "org.deepamehta.subscriptions.subscription_type",
+            "data_type_uri": "dm4.core.text",
+            "view_config_topics": [
+                {
+                    "type_uri": "dm4.webclient.view_config",
+                    "composite": {
+                        "dm4.webclient.color": "#FFC700"
+                    }
+                }
+            ]
+        }
+    ],
+    "assoc_types": [
+        {
+            "value": "Subscription",
+            "uri": "org.deepamehta.subscriptions.subscription",
+            "data_type_uri": "dm4.core.composite",
+            "assoc_defs": [
+                {
+                    "child_type_uri": "org.deepamehta.subscriptions.subscription_type",
+                    "child_cardinality_uri": "dm4.core.many",
+                    "parent_cardinality_uri": "dm4.core.one",
+                    "assoc_type_uri": "dm4.core.aggregation_def"
+                }
+            ],
+            "view_config_topics": [
+                {
+                    "type_uri": "dm4.webclient.view_config",
+                    "composite": {
+                        "dm4.webclient.color": "#FFC700"
+                    }
+                }
+            ]
+        }
+    ],
+    "topics": [
+        {
+            "type_uri" : "org.deepamehta.subscriptions.subscription_type",
+            "uri": "org.deepamehta.subscriptions.in_app_subscription",
+            "value": "In-App"
+        },
+        {
+            "type_uri" : "org.deepamehta.subscriptions.subscription_type",
+            "uri": "org.deepamehta.subscriptions.mail_subscription",
+            "value": "Mail"
+        }
+    ]
+}
