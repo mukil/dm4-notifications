@@ -13,6 +13,10 @@ public interface SubscriptionService extends PluginService {
     public void unsubscribe(long accountId, long itemId);
 
     /** Send a notification to all involved users that something has happened to {item} */
-    public void notify(String title, String message, DeepaMehtaObject item);
+    public void notify(String title, String message, long userId, DeepaMehtaObject item);
+
+    public void receiveAllNotifications();
+
+    public void receiveNewNotifications();
 
 }
