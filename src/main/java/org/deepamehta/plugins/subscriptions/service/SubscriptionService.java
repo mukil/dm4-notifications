@@ -1,8 +1,10 @@
 package org.deepamehta.plugins.subscriptions.service;
 
 import de.deepamehta.core.DeepaMehtaObject;
+import de.deepamehta.core.RelatedTopic;
 import de.deepamehta.core.service.ClientState;
 import de.deepamehta.core.service.PluginService;
+import de.deepamehta.core.service.ResultList;
 
 public interface SubscriptionService extends PluginService {
 
@@ -13,7 +15,9 @@ public interface SubscriptionService extends PluginService {
     public void unsubscribe(long accountId, long itemId);
 
     /** Send a notification to all involved users that something has happened to {item} */
-    public void notify(String title, String message, long userId, DeepaMehtaObject item);
+    public void notify(String title, String message, long actionAccountId, DeepaMehtaObject item);
+
+    public ResultList<RelatedTopic> getSubscriptions();
 
     public void receiveAllNotifications();
 
