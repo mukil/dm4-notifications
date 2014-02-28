@@ -75,6 +75,11 @@
                     "assoc_type_uri": "dm4.core.composition_def"
                 },
                 {
+                    "child_type_uri": "org.deepamehta.subscriptions.notification_seen",
+                    "child_cardinality_uri": "dm4.core.one",
+                    "assoc_type_uri": "dm4.core.composition_def"
+                },
+                {
                     "child_type_uri": "dm4.accesscontrol.user_account",
                     "child_cardinality_uri": "dm4.core.one",
                     "parent_cardinality_uri": "dm4.core.one",

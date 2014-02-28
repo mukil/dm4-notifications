@@ -5,6 +5,7 @@ import de.deepamehta.core.RelatedTopic;
 import de.deepamehta.core.service.ClientState;
 import de.deepamehta.core.service.PluginService;
 import de.deepamehta.core.service.ResultList;
+import java.util.ArrayList;
 
 public interface SubscriptionService extends PluginService {
 
@@ -14,13 +15,13 @@ public interface SubscriptionService extends PluginService {
     /** Remove subscription (edge) for {useraccount} and {item} */
     public void unsubscribe(long accountId, long itemId);
 
-    /** Send a notification to all involved users that something has happened to {item} */
+    /** Create a notification for all subscribed users that something has happened to their {item} */
     public void notify(String title, String message, long actionAccountId, DeepaMehtaObject item);
 
     public ResultList<RelatedTopic> getSubscriptions();
 
-    public void receiveAllNotifications();
+    public ResultList<RelatedTopic> getAllNotifications();
 
-    public void receiveNewNotifications();
+    public ArrayList<RelatedTopic> getAllUnseenNotifications();
 
 }
