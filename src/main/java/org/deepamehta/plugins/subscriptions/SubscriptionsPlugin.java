@@ -209,6 +209,7 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                     createNotifications(title, "", actionAccountId, item, tag_node);
                 }
             }
+            webSocketsService.broadcast("org.deepamehta.subscriptions", "Check notifications for the logged-in user.");
         }
 
     }
