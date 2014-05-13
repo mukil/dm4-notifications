@@ -23,6 +23,16 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import org.deepamehta.plugins.subscriptions.service.SubscriptionService;
 
+/**
+ *
+ * A DeepaMehta 4 Plugin introducing notifications on subscribed topics based on dm4-websockets.
+ *
+ * @author Malte Reißig (<malte@mikromedia.de>)
+ * @website https://github.com/mukil/org.deepamehta-subscriptions
+ * @version 1.0.0
+ *
+ */
+
 @Path("/subscriptions")
 public class SubscriptionsPlugin extends PluginActivator implements SubscriptionService,
                                                                     WebsocketTextMessageListener {
@@ -241,9 +251,7 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                 NOTIFICATION_TYPE, true, false, 0);
         for (RelatedTopic notification : results.getItems()) {
             boolean seen_child = notification.getCompositeValue().getBoolean(NOTIFICATION_SEEN_TYPE);
-            log.info("Notification has seen status: " + seen_child);
             if (!seen_child) {
-                log.info(" adding notification to result-list of unseen");
                 unseen.add(notification);
             }
         }
