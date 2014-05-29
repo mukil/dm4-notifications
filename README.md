@@ -19,7 +19,7 @@ After downloading the bundle-file, place it in the `bundles` folder of your Deep
 
 ## Application Model
 
-![screenshot1](/mukil/org.deepamehta-subscriptions/raw/master/subscription_model_doc.png)
+![Screenshot of Subscription Application Model in DM, Selected TopicType Notification](/subscription_model_doc.png)
 
 ## GNU Public License
 
