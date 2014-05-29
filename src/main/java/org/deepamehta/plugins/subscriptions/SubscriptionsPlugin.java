@@ -135,7 +135,7 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
 
     @GET
     @Path("/notification/seen/{newsId}")
-    public void setNotificationSeen(@PathParam("newsId") long newsId) {
+    public boolean setNotificationSeen(@PathParam("newsId") long newsId) {
         DeepaMehtaTransaction tx = dms.beginTx();
         try {
             // 0) Check for any session
@@ -146,10 +146,11 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
             // 1) Do operation
             log.info("Set notification " + newsId + " as seen!");
             tx.success();
+            return true;
         } catch (Exception e) {
             tx.failure();
-            log.info("Did NOT set notification " + newsId + " as seen!");
-            throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+            log.warning("Could NOT set notification " + newsId + " as seen! Caused by: " + e.getMessage());
+            return false;
         } finally {
             tx.finish();
         }
@@ -171,6 +172,14 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     public void subscribe(long accountId, long itemId, ClientState clientState) {
         DeepaMehtaTransaction tx = dms.beginTx();
         try {
+            // 1)
+            Topic itemToSubscribe = dms.getTopic(itemId, false);
+            if (!itemToSubscribe.getTypeUri().equals(DEEPAMEHTA_TAG_TYPE)
+                    && !itemToSubscribe.getTypeUri().equals(USER_ACCOUNT_TYPE)) {
+                throw new RuntimeException("Subscription are only supported for topics of type "
+                        + "\"User Account\" or \"Tag\" - Skipping creation of subscription");
+            }
+            // 2) Create subscriptions (if not alreay existent)
             if (!associationExists(SUBSCRIPTION_EDGE_TYPE, itemId, accountId)) {
                 AssociationModel model = new AssociationModel(SUBSCRIPTION_EDGE_TYPE,
                     new TopicRoleModel(accountId, DEFAULT_ROLE_TYPE),
@@ -178,7 +187,7 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                     new CompositeValueModel().addRef("org.deepamehta.subscriptions.subscription_type",
                     "org.deepamehta.subscriptions.in_app_subscription"));
                 dms.createAssociation(model, clientState);
-                log.info("Subscribed " + accountId + " to item " + itemId);
+                log.info("New subscription for user:" + accountId + " to item:" + itemId);
             } else {
                 log.info("Subscription already exists between " + accountId + " and " + itemId);
             }
@@ -201,11 +210,22 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
         }
     }
 
+    /**
+     * Creates new notifications for all users which directly subscribed the edited/created (given) item.
+     * Notifications are created if the (given) item is either of TopicType "User Account" or of any other TopicType
+     * which has the TopicType=Tag as a child-type. In the latter case, all subscribers of the _Tag_ are notified.
+     *
+     * {title}              title of the notification
+     * {message}            text part of the notification
+     * {actionAccountId}    topic-id of user account performing the action which leads to the notification of all others
+     * {item}               item users can have subscribed (either "User Account" or any TopicType with "Tags" as child)
+     */
     @Override
-    public void notify(String title, String message, long actionAccountId, DeepaMehtaObject item) {
+    public void notifySubscribers(String title, String message, long actionAccountId, DeepaMehtaObject item) {
 
         if (item.getTypeUri().equals(USER_ACCOUNT_TYPE)) {
             // 1) create notifications for all directl subscribers of creates|edits of this user topic
+            log.info("Notifying subscribers of user account \"" + item.getSimpleValue() + "\"");
             createNotifications(title, "", actionAccountId, item);
         } else {
             // 1) create notifications for all subscribers of all the tags this (created|edited) topic is tagged with

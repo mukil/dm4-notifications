@@ -15,8 +15,8 @@ public interface SubscriptionService extends PluginService {
     /** Remove subscription (edge) for {useraccount} and {item} */
     public void unsubscribe(long accountId, long itemId);
 
-    /** Create a notification for all subscribed users that something has happened to their {item} */
-    public void notify(String title, String message, long actionAccountId, DeepaMehtaObject item);
+    /** Create notifications for all users with a direct or indirect (tags) subscription to the given [item} */
+    public void notifySubscribers(String title, String message, long actionAccountId, DeepaMehtaObject item);
 
     /** Gets all subscribed topics for the logged-in user. */
     public ResultList<RelatedTopic> getSubscriptions();
