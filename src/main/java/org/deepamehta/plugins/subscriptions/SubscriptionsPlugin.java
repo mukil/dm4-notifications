@@ -29,7 +29,7 @@ import org.deepamehta.plugins.subscriptions.service.SubscriptionService;
  *
  * @author Malte Reißig (<malte@mikromedia.de>)
  * @website https://github.com/mukil/org.deepamehta-subscriptions
- * @version 1.0.0
+ * @version 1.0.1-SNAPSHOT
  *
  */
 
