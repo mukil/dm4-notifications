@@ -210,18 +210,8 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
         }
     }
 
-    /**
-     * Creates new notifications for all users which directly subscribed the edited/created (given) item.
-     * Notifications are created if the (given) item is either of TopicType "User Account" or of any other TopicType
-     * which has the TopicType=Tag as a child-type. In the latter case, all subscribers of the _Tag_ are notified.
-     *
-     * {title}              title of the notification
-     * {message}            text part of the notification
-     * {actionAccountId}    topic-id of user account performing the action which leads to the notification of all others
-     * {item}               item users can have subscribed (either "User Account" or any TopicType with "Tags" as child)
-     */
     @Override
-    public void notifySubscribers(String title, String message, long actionAccountId, DeepaMehtaObject item) {
+    public void createNotifications(String title, String message, long actionAccountId, DeepaMehtaObject item) {
 
         if (item.getTypeUri().equals(USER_ACCOUNT_TYPE)) {
             // 1) create notifications for all directl subscribers of creates|edits of this user topic
@@ -236,7 +226,7 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                     Topic tag_node = dms.getTopic(tag.getId(), true);
                     log.info("Notifying subscribers of tag \"" + tag_node.getSimpleValue() + "\"");
                     // for all subscribers of this tag
-                    createNotifications(title, "", actionAccountId, item, tag_node);
+                    createNotificationTopics(title, "", actionAccountId, item, tag_node);
                 }
             }
             webSocketsService.broadcast("org.deepamehta.subscriptions", "Check notifications for the logged-in user.");
@@ -285,11 +275,11 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
 
     }
 
-    private void createNotifications(String title, String text, long accountId, DeepaMehtaObject involvedItem) {
-        createNotifications(title, text, accountId, involvedItem, null);
+    private void createNotificationTopics(String title, String text, long accountId, DeepaMehtaObject involvedItem) {
+        createNotificationTopics(title, text, accountId, involvedItem, null);
     }
 
-    private void createNotifications(String title, String text, long accountId, DeepaMehtaObject involvedItem,
+    private void createNotificationTopics(String title, String text, long accountId, DeepaMehtaObject involvedItem,
             DeepaMehtaObject subscribedItem) {
         // 0) Fetch all subscribers of item X
         ResultList<RelatedTopic> subscribers = null;
