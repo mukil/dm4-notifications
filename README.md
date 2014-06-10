@@ -1,13 +1,28 @@
 
-# DeepaMehta 4 Subscriptions Module
+# DeepaMehta 4 Subscriptions
 
-This DeepaMehta 4 plugin introduces persistent _Notifications_ (Topic Type) and a _Subscription Edge_ (Association Type) to your DeepaMehta installation.
+The DeepaMehta 4 Subscriptions plugin provides a developer the basis for realizing a publish/subscribe function.
 
-It comes with a handy Plugin Service to `subscribe` and `unsubscribe` users to topics as well as to `notifySubscribers` of either _User Account_- or _Tag_-Topics.
+The publish/subscribe use case is:
+
+A user subscribes a tag.  
+Items (topics) are tagged.  
+The user is notified when a such tagged item is changed.  
+
+Actually the plugin provides:
+• A *Notification* model (a Topic Type)
+• A *Subscription* model (an Association Type)
+• A service to
+   • Manage subscriptions (subscribe/unsubscribe)
+   • Create notifications (persistent notifcations for all users who subscribed given item)
+
 
 ## Requirements
 
-To be able to install this module you first have to have install the following DeepaMehta 4 Plugins.
+DeepaMehta 4 is a platform for collaboration and knowledge management.
+https://github.com/jri/deepamehta
+
+To be able to install this module you first and additionally have to install the following DeepaMehta 4 Plugins.
 
 * `dm42-websockets-0.2.0`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
 
