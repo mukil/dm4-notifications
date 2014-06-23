@@ -10,11 +10,11 @@ Items (topics) are tagged.
 The user is notified when a such tagged item is changed.  
 
 Actually the plugin provides:
-• A *Notification* model (a Topic Type)
-• A *Subscription* model (an Association Type)
-• A service to
-   • Manage subscriptions (subscribe/unsubscribe)
-   • Create notifications (persistent notifcations for all users who subscribed given item)
+*   A *Notification* model (a Topic Type)
+*   A *Subscription* model (an Association Type)
+*   A service to
+    *    Manage subscriptions (subscribe/unsubscribe)
+    *    Create notifications (persistent notifcations for all users who subscribed given item)
 
 
 ## Requirements
