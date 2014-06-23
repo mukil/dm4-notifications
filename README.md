@@ -32,6 +32,14 @@ You can download the latest `dm42-subscriptions-X.Y.Z.jar-`-Bundle from [here](h
 
 After downloading the bundle-file, place it in the `bundles` folder of your DeepaMehta installation and restart DeepaMehta.
 
+## Usage 
+
+Installation of this plugin on its own is of limited use for end-users.
+
+The main features of this plugin is a service to be used by other application developers.
+
+For example, the `dm4-notizen-app` makes use of this plugin and provides an examplary user-interface for this service.
+
 ## Application Model
 
 ![Screenshot of Subscription Application Model in DM, Selected TopicType Notification](/subscription_model_doc.png)
