@@ -51,7 +51,7 @@ This sofware is released under the terms of the GNU General Public License in Ve
 
 ## Version History
 
-**1.0.1**, UPCOMING
+**1.0.1**, Nov 17, 2014
 - revised service method signatures
 - introducing some javadoc
 - compatible with DM 4.3
