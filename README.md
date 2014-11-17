@@ -10,8 +10,8 @@ Items (topics) are tagged.
 The user is notified when a such tagged item is changed.  
 
 Actually the plugin provides:
-*   A *Notification* model (a Topic Type)
-*   A *Subscription* model (an Association Type)
+*   A *Notification* model (a Topic Type for the _message_)
+*   A *Subscription* model (an Association Type for the _configurations_)
 *   A service to
     *    Manage subscriptions (subscribe/unsubscribe)
     *    Create notifications (persistent notifcations for all users who subscribed given item)
@@ -24,13 +24,14 @@ https://github.com/jri/deepamehta
 
 To be able to install this module you first and additionally have to install the following DeepaMehta 4 Plugins.
 
-* `dm42-websockets-0.2.0`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
+* `dm43-websockets-0.2.1`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
+* `dm43-deepamehta-tags-1.3.7`-Bundle - [Source Code](https://github.com/mukil/dm4.tags), [Nightly Build](http://download.deepamehta.de/nightly/)
 
 ## Download & Installation
 
-You can download the latest `dm42-subscriptions-X.Y.Z.jar-`-Bundle from [here](http://download.deepamehta.de/nightly/).
+You can download the latest `dm43-subscriptions-X.Y.Z.jar-`-Bundle from [here](http://download.deepamehta.de/nightly/).
 
-After downloading the bundle-file, place it in the `bundles` folder of your DeepaMehta installation and restart DeepaMehta.
+After downloading the bundle-files, place them (websockets, tags, subscriptions) in the `bundles` folder of your DeepaMehta installation and restart DeepaMehta.
 
 ## Usage 
 

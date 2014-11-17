@@ -28,7 +28,7 @@ import org.deepamehta.plugins.subscriptions.service.SubscriptionService;
  * A DeepaMehta 4 Plugin introducing notifications on subscribed topics based on dm4-websockets.
  *
  * @author Malte Reißig (<malte@mikromedia.de>)
- * @website https://github.com/mukil/org.deepamehta-subscriptions
+ * @website https://github.com/mukil/dm4-subscriptions
  * @version 1.0.1-SNAPSHOT
  *
  */
@@ -318,6 +318,5 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
         List<Association> results = dms.getAssociations(itemId, accountId, edge_type);
         return (results.size() > 0) ? true : false;
     }
-
 
 }
