@@ -6,11 +6,9 @@ import de.deepamehta.core.RelatedTopic;
 import de.deepamehta.core.Topic;
 import de.deepamehta.core.model.*;
 import de.deepamehta.core.osgi.PluginActivator;
-import de.deepamehta.core.service.ClientState;
-import de.deepamehta.core.service.Directives;
-import de.deepamehta.core.service.PluginService;
+import de.deepamehta.core.service.Inject;
 import de.deepamehta.core.service.ResultList;
-import de.deepamehta.core.service.annotation.ConsumesService;
+import de.deepamehta.core.service.Transactional;
 import de.deepamehta.core.storage.spi.DeepaMehtaTransaction;
 import de.deepamehta.plugins.accesscontrol.service.AccessControlService;
 import de.deepamehta.plugins.websockets.event.WebsocketTextMessageListener;
@@ -29,7 +27,7 @@ import org.deepamehta.plugins.subscriptions.service.SubscriptionService;
  *
  * @author Malte Reißig (<malte@mikromedia.de>)
  * @website https://github.com/mukil/dm4-subscriptions
- * @version 1.0.1-SNAPSHOT
+ * @version 1.0.3-SNAPSHOT
  *
  */
 
@@ -55,49 +53,25 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
 
     private static final String DEFAULT_ROLE_TYPE = "dm4.core.default";
 
+    @Inject
     private AccessControlService aclService = null;
+    @Inject
     private WebSocketsService webSocketsService = null;
 
-
-    // --- Hook Implementations
-
-
-    @Override
-    @ConsumesService({
-        "de.deepamehta.plugins.accesscontrol.service.AccessControlService",
-        "de.deepamehta.plugins.websockets.service.WebSocketsService"
-    })
-    public void serviceArrived(PluginService service) {
-        if (service instanceof AccessControlService) {
-            aclService = (AccessControlService) service;
-        } else if (service instanceof WebSocketsService) {
-            webSocketsService = (WebSocketsService) service;
-        }
-    }
-
-    @ConsumesService({
-        "de.deepamehta.plugins.accesscontrol.service.AccessControlService",
-        "de.deepamehta.plugins.websockets.service.WebSocketsService"
-    })
-    public void serviceGone(PluginService service) {
-        if (service instanceof AccessControlService) {
-            aclService = null;
-        } else if (service instanceof WebSocketsService) {
-            webSocketsService = null;
-        }
-    }
+    
 
     @GET
     @Path("/subscribe/{itemId}")
-    public Response subscribeUser(@PathParam("itemId") long itemId, @HeaderParam("Cookie") ClientState clientState) {
+    @Transactional
+    public Response subscribeUser(@PathParam("itemId") long itemId) {
         // 0) Check for any session
         String logged_in_username = aclService.getUsername();
         if (!logged_in_username.isEmpty()) {
-            Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username), false);
+            Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username));
             Topic account = user.getRelatedTopic("dm4.core.composition", "dm4.core.child",
-                    "dm4.core.parent", "dm4.accesscontrol.user_account", true, false);
+                    "dm4.core.parent", "dm4.accesscontrol.user_account").loadChildTopics();
             // 1) Users can just manage their own subscriptions
-            subscribe(account.getId(), itemId, clientState);
+            subscribe(account.getId(), itemId);
             return Response.ok().build();
         }
         return Response.noContent().build();
@@ -105,13 +79,14 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
 
     @GET
     @Path("/unsubscribe/{itemId}")
+    @Transactional
     public Response unsubscribeUser(@PathParam("itemId") long itemId) {
         // 0) Check for any session
         String logged_in_username = aclService.getUsername();
         if (!logged_in_username.isEmpty()) {
-            Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username), false);
+            Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username));
             Topic account = user.getRelatedTopic("dm4.core.composition", "dm4.core.child",
-                    "dm4.core.parent", "dm4.accesscontrol.user_account", true, false);
+                    "dm4.core.parent", "dm4.accesscontrol.user_account").loadChildTopics();
             // 1) Users can just manage their own subscriptions
             unsubscribe(account.getId(), itemId);
             return Response.ok().build();
@@ -125,9 +100,9 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
         // 0) Check for any session
         String logged_in_username = aclService.getUsername();
         if (logged_in_username == null || logged_in_username.isEmpty()) return null;
-        Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username), false);
+        Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username));
         Topic account = user.getRelatedTopic("dm4.core.composition", "dm4.core.child", "dm4.core.parent",
-                "dm4.accesscontrol.user_account", false, false);
+                "dm4.accesscontrol.user_account");
         // 1) Return results
         log.info("Listing all subscriptions of user " + account.getSimpleValue());
         return account.getRelatedTopics(SUBSCRIPTION_EDGE_TYPE, 0);
@@ -135,24 +110,20 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
 
     @GET
     @Path("/notification/seen/{newsId}")
+    @Transactional
     public boolean setNotificationSeen(@PathParam("newsId") long newsId) {
-        DeepaMehtaTransaction tx = dms.beginTx();
         try {
             // 0) Check for any session
             String logged_in_username = aclService.getUsername();
             if (logged_in_username == null || logged_in_username.isEmpty()) throw new RuntimeException();
-            Topic notification = dms.getTopic(newsId, true);
-            notification.getCompositeValue().set(NOTIFICATION_SEEN_TYPE, true, null, new Directives());
+            Topic notification = dms.getTopic(newsId).loadChildTopics();
+            notification.getChildTopics().set(NOTIFICATION_SEEN_TYPE, true);
             // 1) Do operation
             log.info("Set notification " + newsId + " as seen!");
-            tx.success();
             return true;
         } catch (Exception e) {
-            tx.failure();
             log.warning("Could NOT set notification " + newsId + " as seen! Caused by: " + e.getMessage());
             return false;
-        } finally {
-            tx.finish();
         }
     }
 
@@ -169,11 +140,11 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     }
 
     @Override
-    public void subscribe(long accountId, long itemId, ClientState clientState) {
-        DeepaMehtaTransaction tx = dms.beginTx();
+    @Transactional
+    public void subscribe(long accountId, long itemId) {
         try {
             // 1)
-            Topic itemToSubscribe = dms.getTopic(itemId, false);
+            Topic itemToSubscribe = dms.getTopic(itemId);
             if (!itemToSubscribe.getTypeUri().equals(DEEPAMEHTA_TAG_TYPE)
                     && !itemToSubscribe.getTypeUri().equals(USER_ACCOUNT_TYPE)) {
                 throw new RuntimeException("Subscription are only supported for topics of type "
@@ -184,23 +155,20 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                 AssociationModel model = new AssociationModel(SUBSCRIPTION_EDGE_TYPE,
                     new TopicRoleModel(accountId, DEFAULT_ROLE_TYPE),
                     new TopicRoleModel(itemId, DEFAULT_ROLE_TYPE),
-                    new CompositeValueModel().addRef("org.deepamehta.subscriptions.subscription_type",
+                    new ChildTopicsModel().addRef("org.deepamehta.subscriptions.subscription_type",
                     "org.deepamehta.subscriptions.in_app_subscription"));
-                dms.createAssociation(model, clientState);
+                dms.createAssociation(model);
                 log.info("New subscription for user:" + accountId + " to item:" + itemId);
             } else {
                 log.info("Subscription already exists between " + accountId + " and " + itemId);
             }
-            tx.success();
         } catch (Exception e) {
             log.warning("Exception " + e.getMessage());
-            tx.failure();
-        } finally {
-            tx.finish();
         }
     }
 
     @Override
+    @Transactional
     public void unsubscribe(long accountId, long itemId) {
         List<Association> assocs = dms.getAssociations(accountId, itemId, SUBSCRIPTION_EDGE_TYPE);
         Iterator<Association> iterator = assocs.iterator();
@@ -211,19 +179,19 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     }
 
     @Override
+    @Transactional
     public void createNotifications(String title, String message, long actionAccountId, DeepaMehtaObject item) {
-
         if (item.getTypeUri().equals(USER_ACCOUNT_TYPE)) {
             // 1) create notifications for all directl subscribers of creates|edits of this user topic
             log.info("Notifying subscribers of user account \"" + item.getSimpleValue() + "\"");
             createNotifications(title, "", actionAccountId, item);
         } else {
             // 1) create notifications for all subscribers of all the tags this (created|edited) topic is tagged with
-            if (item.getModel().getCompositeValueModel().has(DEEPAMEHTA_TAG_TYPE)) {
+            if (item.getModel().getChildTopicsModel().has(DEEPAMEHTA_TAG_TYPE)) {
                 // 2) check all tags
-                List<TopicModel> tags = item.getModel().getCompositeValueModel().getTopics(DEEPAMEHTA_TAG_TYPE);
+                List<TopicModel> tags = item.getModel().getChildTopicsModel().getTopics(DEEPAMEHTA_TAG_TYPE);
                 for (TopicModel tag : tags) {
-                    Topic tag_node = dms.getTopic(tag.getId(), true);
+                    Topic tag_node = dms.getTopic(tag.getId()).loadChildTopics();
                     log.info("Notifying subscribers of tag \"" + tag_node.getSimpleValue() + "\"");
                     // for all subscribers of this tag
                     createNotificationTopics(title, "", actionAccountId, item, tag_node);
@@ -238,29 +206,29 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     public ResultList<RelatedTopic> getAllNotifications() {
         String logged_in_username = aclService.getUsername();
         if (logged_in_username == null || logged_in_username.isEmpty()) return null;
-        Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username), false);
+        Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username));
         Topic account = user.getRelatedTopic("dm4.core.composition", "dm4.core.child", "dm4.core.parent",
-                "dm4.accesscontrol.user_account", false, false);
+                "dm4.accesscontrol.user_account");
         //
-        ResultList<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE_TYPE, "dm4.core.default", "dm4.core.default",
-                NOTIFICATION_TYPE, true, false, 0);
+        ResultList<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE_TYPE, 
+            "dm4.core.default", "dm4.core.default", NOTIFICATION_TYPE, 0);
         log.info("Fetching " +results.getSize()+ " notifications for user " + account.getSimpleValue());
-        return results;
+        return results.loadChildTopics();
     }
 
     @Override
     public ArrayList<RelatedTopic> getAllUnseenNotifications() {
         String logged_in_username = aclService.getUsername();
         if (logged_in_username == null || logged_in_username.isEmpty()) return null;
-        Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username), false);
+        Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(logged_in_username));
         Topic account = user.getRelatedTopic("dm4.core.composition", "dm4.core.child", "dm4.core.parent",
-                "dm4.accesscontrol.user_account", false, false);
+                "dm4.accesscontrol.user_account");
         //
         ArrayList<RelatedTopic> unseen = new ArrayList<RelatedTopic>();
-        ResultList<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE_TYPE, "dm4.core.default", "dm4.core.default",
-                NOTIFICATION_TYPE, true, false, 0);
+        ResultList<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE_TYPE, 
+            "dm4.core.default", "dm4.core.default", NOTIFICATION_TYPE, 0);
         for (RelatedTopic notification : results.getItems()) {
-            boolean seen_child = notification.getCompositeValue().getBoolean(NOTIFICATION_SEEN_TYPE);
+            boolean seen_child = notification.getChildTopics().getBoolean(NOTIFICATION_SEEN_TYPE);
             if (!seen_child) {
                 unseen.add(notification);
             }
@@ -272,7 +240,6 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     @Override
     public void websocketTextMessage(String message) {
         log.info("### Receiving message from WebSocket client: \"" + message + "\"");
-
     }
 
     private void createNotificationTopics(String title, String text, long accountId, DeepaMehtaObject involvedItem) {
@@ -286,17 +253,17 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
         long subscribedItemId = 0;
         if (subscribedItem != null) { // fetch subscribers of subscribedItem
             subscribers = subscribedItem.getRelatedTopics(SUBSCRIPTION_EDGE_TYPE,
-                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account", true, false, 0);
+                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account", 0);
             subscribedItemId = subscribedItem.getId();
         } else { // fetch subscribers of involvedItem
             subscribers = involvedItem.getRelatedTopics(SUBSCRIPTION_EDGE_TYPE,
-                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account", true, false, 0);
+                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account",0);
         }
         for (RelatedTopic subscriber : subscribers) {
             if (subscriber.getId() != accountId) {
                 log.fine("> subscription is valid, notifying user " + subscriber.getSimpleValue());
                 // 1) Create notification instance
-                CompositeValueModel message = new CompositeValueModel()
+                ChildTopicsModel message = new ChildTopicsModel()
                         .put(NOTIFICATION_SEEN_TYPE, false)
                         .put(NOTIFICATION_TITLE_TYPE, title)
                         .put(NOTIFICATION_BODY_TYPE, text)
@@ -304,12 +271,12 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                         .putRef(USER_ACCOUNT_TYPE, accountId)
                         .put(NOTIFICATION_INVOLVED_ITEM_ID_TYPE, involvedItem.getId());
                 TopicModel model = new TopicModel(NOTIFICATION_TYPE, message);
-                dms.createTopic(model, null); // check: is system the creator?
+                dms.createTopic(model); // check: is system the creator?
                 // 2) Hook up notification with subscriber
                 AssociationModel recipient_model = new AssociationModel(NOTIFICATION_RECIPIENT_EDGE_TYPE,
                         model.createRoleModel(DEFAULT_ROLE_TYPE),
                         new TopicRoleModel(subscriber.getId(), DEFAULT_ROLE_TYPE));
-                dms.createAssociation(recipient_model, null); // check: is system the creator?
+                dms.createAssociation(recipient_model); // check: is system the creator?
             }
         }
     }

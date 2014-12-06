@@ -2,7 +2,6 @@ package org.deepamehta.plugins.subscriptions.service;
 
 import de.deepamehta.core.DeepaMehtaObject;
 import de.deepamehta.core.RelatedTopic;
-import de.deepamehta.core.service.ClientState;
 import de.deepamehta.core.service.PluginService;
 import de.deepamehta.core.service.ResultList;
 import java.util.ArrayList;
@@ -15,13 +14,13 @@ public interface SubscriptionService extends PluginService {
      * @param   accountId   topic-id of user account
      * @param   itemId      topic-id of user account
      */
-    public void subscribe(long accountId, long itemId, ClientState clientState);
+    public void subscribe(long accountId, long itemId);
 
     /**
      * Remove subscription (edge) for given user account and item.
      *
-     * @param  userAccount  topic-id of user account
-     * @param  item         topic-id of subscribed item
+     * @param  accountId        topic-id of user account
+     * @param  itemId           topic-id of subscribed item
      */
     public void unsubscribe(long accountId, long itemId);
 
