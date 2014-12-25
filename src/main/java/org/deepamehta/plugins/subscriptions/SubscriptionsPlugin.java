@@ -26,7 +26,7 @@ import org.deepamehta.plugins.subscriptions.service.SubscriptionService;
  *
  * @author Malte Reißig (<malte@mikromedia.de>)
  * @website https://github.com/mukil/dm4-subscriptions
- * @version 1.0.3-SNAPSHOT
+ * @version 1.0.3
  *
  */
 
@@ -109,7 +109,7 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
             // 0) Check for any session
             String logged_in_username = aclService.getUsername();
             if (logged_in_username == null || logged_in_username.isEmpty()) {
-                throw new RuntimeException("Nobody logged in for whom we could set the notification as seen.");
+                log.warning("Nobody logged in for whom we could set the notification as seen.");
             }
             Topic notification = dms.getTopic(newsId).loadChildTopics();
             notification.getChildTopics().set(NOTIFICATION_SEEN_TYPE, true);
@@ -139,11 +139,11 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     @Transactional
     public void subscribe(long accountId, long itemId) {
         try {
-            // 1)
+            // 1) Check sanity of subscription
             Topic itemToSubscribe = dms.getTopic(itemId);
             if (!itemToSubscribe.getTypeUri().equals(DEEPAMEHTA_TAG_TYPE)
                     && !itemToSubscribe.getTypeUri().equals(USER_ACCOUNT_TYPE)) {
-                throw new RuntimeException("Subscription are only supported for topics of type "
+                log.warning("Subscription are only supported for topics of type "
                         + "\"User Account\" or \"Tag\" - Skipping creation of subscription");
             }
             // 2) Create subscriptions (if not alreay existent)
@@ -159,6 +159,8 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                 log.info("Subscription already exists between " + accountId + " and " + itemId);
             }
         } catch (Exception e) {
+            log.warning("ROLLBACK!");
+            log.warning("Subscription between " +accountId+ " and " +itemId+ " not created.");
             throw new RuntimeException(e);
         }
     }

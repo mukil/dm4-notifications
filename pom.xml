@@ -7,7 +7,7 @@
     <name>DeepaMehta 4 Subscriptions</name>
     <groupId>org.deepamehta</groupId>
     <artifactId>dm44-subscriptions</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
     <packaging>bundle</packaging>
 
     <parent>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>de.deepamehta</groupId>
             <artifactId>dm44-deepamehta-tags</artifactId>
-            <version>1.3.8-SNAPSHOT</version>
+            <version>1.3.8</version>
         </dependency>
     </dependencies>
 
