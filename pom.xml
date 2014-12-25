@@ -7,7 +7,7 @@
     <name>DeepaMehta 4 Subscriptions</name>
     <groupId>org.deepamehta</groupId>
     <artifactId>dm44-subscriptions</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <parent>

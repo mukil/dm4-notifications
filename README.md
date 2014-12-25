@@ -1,7 +1,7 @@
 
 # DeepaMehta 4 Subscriptions
 
-The DeepaMehta 4 Subscriptions plugin provides a developer the basis for realizing a publish/subscribe function.
+The DeepaMehta 4 Subscriptions plugin provides developers the base for realizing a thematic publish/subscribe function.
 
 The publish/subscribe use case is:
 
@@ -16,6 +16,7 @@ Actually the plugin provides:
     *    Manage subscriptions (subscribe/unsubscribe)
     *    Create notifications (persistent notifcations for all users who subscribed given item)
 
+A subscription-edge (associating a user with a subscribed item) can have many subscription types (as child topics). The plugin developers conceived two basic subscription types in advance: `In-App` (delivery via dm4-websockets) and `Mail` (not yet implemented).
 
 ## Requirements
 
@@ -24,12 +25,12 @@ https://github.com/jri/deepamehta
 
 To be able to install this module you first and additionally have to install the following DeepaMehta 4 Plugins.
 
-* `dm43-websockets-0.2.1`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
-* `dm43-deepamehta-tags-1.3.7`-Bundle - [Source Code](https://github.com/mukil/dm4.tags), [Nightly Build](http://download.deepamehta.de/nightly/)
+* `dm44-websockets-0.2.2`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
+* `dm44-deepamehta-tags-1.3.8`-Bundle - [Source Code](https://github.com/mukil/dm4.tags), [Nightly Build](http://download.deepamehta.de/nightly/)
 
 ## Download & Installation
 
-You can download the latest `dm43-subscriptions-X.Y.Z.jar-`-Bundle from [here](http://download.deepamehta.de/nightly/).
+You can download the latest `dm44-subscriptions-X.Y.Z.jar-`-Bundle from [here](http://download.deepamehta.de/nightly/).
 
 After downloading the bundle-files, place them (websockets, tags, subscriptions) in the `bundles` folder of your DeepaMehta installation and restart DeepaMehta.
 
@@ -51,7 +52,12 @@ This sofware is released under the terms of the GNU General Public License in Ve
 
 ## Version History
 
-**1.0.1**, Nov 17, 2014
+**1.0.3**, Dec 25, 2014
+
+- compatible with DeepaMehta 4.4
+- code revision
+
+**1.0.2**, Nov 17, 2014
 - revised service method signatures
 - introducing some javadoc
 - compatible with DM 4.3
