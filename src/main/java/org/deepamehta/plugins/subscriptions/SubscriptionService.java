@@ -1,12 +1,19 @@
-package org.deepamehta.plugins.subscriptions.service;
+package org.deepamehta.plugins.subscriptions;
 
 import de.deepamehta.core.DeepaMehtaObject;
 import de.deepamehta.core.RelatedTopic;
-import de.deepamehta.core.service.PluginService;
-import de.deepamehta.core.service.ResultList;
-import java.util.ArrayList;
+import java.util.List;
 
-public interface SubscriptionService extends PluginService {
+public interface SubscriptionService {
+
+    static final String NOTIFICATION = "org.deepamehta.subscriptions.notification";
+    static final String TITLE_TYPE = "org.deepamehta.subscriptions.notification_title";
+    static final String BODY_TYPE = "org.deepamehta.subscriptions.notification_body";
+    static final String INVOLVED_ITEM_ID_TYPE = "org.deepamehta.subscriptions.involved_item_id";
+    static final String SUBSCRIBED_ITEM_ID_TYPE = "org.deepamehta.subscriptions.subscribed_item_id";
+    static final String SEEN_TYPE = "org.deepamehta.subscriptions.notification_seen";
+    static final String SUBSCRIPTION_EDGE_TYPE = "org.deepamehta.subscriptions.subscription_edge";
+    static final String RECIPIENT_EDGE_TYPE = "org.deepamehta.subscriptions.notification_recipient_edge";
 
     /**
      * Create a subscription edge for useraccount to item.
@@ -37,12 +44,12 @@ public interface SubscriptionService extends PluginService {
     public void createNotifications(String title, String message, long actionAccountId, DeepaMehtaObject item);
 
     /** Gets all subscribed topics for the logged-in user. */
-    public ResultList<RelatedTopic> getSubscriptions();
+    public List<RelatedTopic> getSubscriptions();
 
     /** Gets all notifications for the logged-in user. */
-    public ResultList<RelatedTopic> getAllNotifications();
+    public List<RelatedTopic> getNotifications();
 
     /** Gets all unread notifications for the logged-in user. */
-    public ArrayList<RelatedTopic> getAllUnseenNotifications();
+    public List<RelatedTopic> getUnseenNotifications();
 
 }

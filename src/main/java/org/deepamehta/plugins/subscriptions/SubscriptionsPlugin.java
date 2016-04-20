@@ -7,18 +7,18 @@ import de.deepamehta.core.Topic;
 import de.deepamehta.core.model.*;
 import de.deepamehta.core.osgi.PluginActivator;
 import de.deepamehta.core.service.Inject;
-import de.deepamehta.core.service.ResultList;
 import de.deepamehta.core.service.Transactional;
-import de.deepamehta.plugins.accesscontrol.service.AccessControlService;
-import de.deepamehta.plugins.websockets.event.WebsocketTextMessageListener;
-import de.deepamehta.plugins.websockets.service.WebSocketsService;
+import de.deepamehta.core.util.DeepaMehtaUtils;
+import de.deepamehta.accesscontrol.AccessControlService;
+import de.deepamehta.websockets.WebSocketConnection;
+import de.deepamehta.websockets.event.WebsocketTextMessageListener;
+import de.deepamehta.websockets.WebSocketsService;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-import org.deepamehta.plugins.subscriptions.service.SubscriptionService;
 
 /**
  *
@@ -26,7 +26,7 @@ import org.deepamehta.plugins.subscriptions.service.SubscriptionService;
  *
  * @author Malte Reißig (<malte@mikromedia.de>)
  * @website https://github.com/mukil/dm4-subscriptions
- * @version 1.0.3
+ * @version 1.0.5-SNAPSHOT
  *
  */
 
@@ -35,16 +35,6 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
                                                                     WebsocketTextMessageListener {
 
     private static Logger log = Logger.getLogger(SubscriptionsPlugin.class.getName());
-
-    private static final String NOTIFICATION_TYPE = "org.deepamehta.subscriptions.notification";
-    private static final String NOTIFICATION_TITLE_TYPE = "org.deepamehta.subscriptions.notification_title";
-    private static final String NOTIFICATION_BODY_TYPE = "org.deepamehta.subscriptions.notification_body";
-    private static final String NOTIFICATION_INVOLVED_ITEM_ID_TYPE = "org.deepamehta.subscriptions.involved_item_id";
-    private static final String NOTIFICATION_SUB_ITEM_ID_TYPE = "org.deepamehta.subscriptions.subscribed_item_id";
-    private static final String NOTIFICATION_RECIPIENT_EDGE_TYPE =
-            "org.deepamehta.subscriptions.notification_recipient_edge";
-    private static final String SUBSCRIPTION_EDGE_TYPE = "org.deepamehta.subscriptions.subscription_edge";
-    private static final String NOTIFICATION_SEEN_TYPE = "org.deepamehta.subscriptions.notification_seen";
 
     // These two types of information can currently be subscribed (with their special semantics)
     private static final String USER_ACCOUNT_TYPE = "dm4.accesscontrol.user_account";
@@ -90,15 +80,27 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     }
 
     @GET
-    @Path("/list")
-    public ResultList<RelatedTopic> getSubscriptions() {
+    @Path("/")
+    public List<RelatedTopic> getSubscriptions() {
         // 0) Check for any session
         String logged_in_username = aclService.getUsername();
         if (logged_in_username == null || logged_in_username.isEmpty()) return null;
         Topic account = getUserAccountTopic(logged_in_username);
         // 1) Return results
         log.fine("Listing all subscriptions of user " + account.getSimpleValue());
-        return account.getRelatedTopics(SUBSCRIPTION_EDGE_TYPE, 0);
+        return account.getRelatedTopics(SUBSCRIPTION_EDGE_TYPE);
+    }
+
+    @GET
+    @Path("/notification")
+    public List<RelatedTopic> getNotificationsForUser() {
+        return getNotifications();
+    }
+
+    @GET
+    @Path("/notification/unseen")
+    public ArrayList<RelatedTopic> getUnseenNotificationsForUser() {
+        return getUnseenNotifications();
     }
 
     @GET
@@ -111,8 +113,8 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
             if (logged_in_username == null || logged_in_username.isEmpty()) {
                 log.warning("Nobody logged in for whom we could set the notification as seen.");
             }
-            Topic notification = dms.getTopic(newsId).loadChildTopics();
-            notification.getChildTopics().set(NOTIFICATION_SEEN_TYPE, true);
+            Topic notification = dm4.getTopic(newsId).loadChildTopics();
+            notification.getChildTopics().set(SEEN_TYPE, true);
             // 1) Do operation
             log.fine("Set notification " + newsId + " as seen!");
             return true;
@@ -123,24 +125,12 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
         }
     }
 
-    @GET
-    @Path("/notifications/all")
-    public ResultList<RelatedTopic> getAllNotificationsForUser() {
-        return getAllNotifications();
-    }
-
-    @GET
-    @Path("/notifications/unseen")
-    public ArrayList<RelatedTopic> getAllUnseenNotificationsForUser() {
-        return getAllUnseenNotifications();
-    }
-
     @Override
     @Transactional
     public void subscribe(long accountId, long itemId) {
         try {
             // 1) Check sanity of subscription
-            Topic itemToSubscribe = dms.getTopic(itemId);
+            Topic itemToSubscribe = dm4.getTopic(itemId);
             if (!itemToSubscribe.getTypeUri().equals(DEEPAMEHTA_TAG_TYPE)
                     && !itemToSubscribe.getTypeUri().equals(USER_ACCOUNT_TYPE)) {
                 log.warning("Subscription are only supported for topics of type "
@@ -148,12 +138,12 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
             }
             // 2) Create subscriptions (if not alreay existent)
             if (!associationExists(SUBSCRIPTION_EDGE_TYPE, itemId, accountId)) {
-                AssociationModel model = new AssociationModel(SUBSCRIPTION_EDGE_TYPE,
-                    new TopicRoleModel(accountId, DEFAULT_ROLE_TYPE),
-                    new TopicRoleModel(itemId, DEFAULT_ROLE_TYPE),
-                    new ChildTopicsModel().addRef("org.deepamehta.subscriptions.subscription_type",
+                AssociationModel model = mf.newAssociationModel(SUBSCRIPTION_EDGE_TYPE,
+                    mf.newTopicRoleModel(accountId, DEFAULT_ROLE_TYPE),
+                    mf.newTopicRoleModel(itemId, DEFAULT_ROLE_TYPE),
+                    mf.newChildTopicsModel().addRef("org.deepamehta.subscriptions.subscription_type",
                     "org.deepamehta.subscriptions.in_app_subscription"));
-                dms.createAssociation(model);
+                dm4.createAssociation(model);
                 log.info("New subscription for user:" + accountId + " to item:" + itemId);
             } else {
                 log.info("Subscription already exists between " + accountId + " and " + itemId);
@@ -168,11 +158,11 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     @Override
     @Transactional
     public void unsubscribe(long accountId, long itemId) {
-        List<Association> assocs = dms.getAssociations(accountId, itemId, SUBSCRIPTION_EDGE_TYPE);
+        List<Association> assocs = dm4.getAssociations(accountId, itemId, SUBSCRIPTION_EDGE_TYPE);
         Iterator<Association> iterator = assocs.iterator();
         while (iterator.hasNext()) {
             Association assoc = iterator.next();
-            dms.deleteAssociation(assoc.getId());
+            dm4.deleteAssociation(assoc.getId());
         }
     }
 
@@ -185,11 +175,11 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
             createNotifications(title, "", actionAccountId, item);
         } else {
             // 2) create notifications for all subscribers of all tags this topic is tagged with
-            if (item.getModel().getChildTopicsModel().has(DEEPAMEHTA_TAG_TYPE)) {
+            if (item.getChildTopics().getTopicsOrNull(DEEPAMEHTA_TAG_TYPE) != null) {
                 // 2.1) go trough all tags of this topic
-                List<TopicModel> tags = item.getModel().getChildTopicsModel().getTopics(DEEPAMEHTA_TAG_TYPE);
-                for (TopicModel tag : tags) {
-                    Topic tag_node = dms.getTopic(tag.getId()).loadChildTopics();
+                List<RelatedTopic> tags = item.getChildTopics().getTopics(DEEPAMEHTA_TAG_TYPE);
+                for (RelatedTopic tag : tags) {
+                    Topic tag_node = dm4.getTopic(tag.getId()).loadChildTopics();
                     log.fine("Notifying subscribers of tag \"" + tag_node.getSimpleValue() + "\"");
                     // for all subscribers of this tag
                     createNotificationTopics(title, "", actionAccountId, item, tag_node);
@@ -200,28 +190,29 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     }
 
     @Override
-    public ResultList<RelatedTopic> getAllNotifications() {
+    public List<RelatedTopic> getNotifications() {
         String logged_in_username = aclService.getUsername();
         if (logged_in_username == null || logged_in_username.isEmpty()) return null;
         Topic account = getUserAccountTopic(logged_in_username);
         //
-        ResultList<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE_TYPE, 
-            "dm4.core.default", "dm4.core.default", NOTIFICATION_TYPE, 0);
-        log.fine("Fetching " +results.getSize()+ " notifications for user " + account.getSimpleValue());
-        return results.loadChildTopics();
+        List<RelatedTopic> results = account.getRelatedTopics(RECIPIENT_EDGE_TYPE,
+            "dm4.core.default", "dm4.core.default", NOTIFICATION);
+        log.fine("Fetching " +results.size()+ " notifications for user " + account.getSimpleValue());
+        DeepaMehtaUtils.loadChildTopics(results);
+        return results;
     }
 
     @Override
-    public ArrayList<RelatedTopic> getAllUnseenNotifications() {
+    public ArrayList<RelatedTopic> getUnseenNotifications() {
         String logged_in_username = aclService.getUsername();
         if (logged_in_username == null || logged_in_username.isEmpty()) return null;
         Topic account = getUserAccountTopic(logged_in_username);
         //
         ArrayList<RelatedTopic> unseen = new ArrayList<RelatedTopic>();
-        ResultList<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE_TYPE, 
-            "dm4.core.default", "dm4.core.default", NOTIFICATION_TYPE, 0);
-        for (RelatedTopic notification : results.getItems()) {
-            boolean seen_child = notification.getChildTopics().getBoolean(NOTIFICATION_SEEN_TYPE);
+        List<RelatedTopic> results = account.getRelatedTopics(RECIPIENT_EDGE_TYPE,
+            "dm4.core.default", "dm4.core.default", NOTIFICATION);
+        for (RelatedTopic notification : results) {
+            boolean seen_child = notification.getChildTopics().getBoolean(SEEN_TYPE);
             if (!seen_child) {
                 unseen.add(notification);
             }
@@ -231,9 +222,11 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     }
 
     @Override
-    public void websocketTextMessage(String message) {
-        log.info("### Receiving message from WebSocket client: \"" + message + "\"");
+    public void websocketTextMessage(String string, WebSocketConnection wsc) {
+        log.info("### Received Websocket Text Message: " + string);
     }
+
+    // ---------------------------------------------------------------------------------------------- Private Methods
 
     private void createNotificationTopics(String title, String text, long accountId, DeepaMehtaObject involvedItem) {
         createNotificationTopics(title, text, accountId, involvedItem, null);
@@ -242,45 +235,45 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     private void createNotificationTopics(String title, String text, long accountId, DeepaMehtaObject involvedItem,
             DeepaMehtaObject subscribedItem) {
         // 0) Fetch all subscribers of item X
-        ResultList<RelatedTopic> subscribers = null;
+        List<RelatedTopic> subscribers = null;
         long subscribedItemId = 0;
         if (subscribedItem != null) { // fetch subscribers of subscribedItem
             subscribers = subscribedItem.getRelatedTopics(SUBSCRIPTION_EDGE_TYPE,
-                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account", 0);
+                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account");
             subscribedItemId = subscribedItem.getId();
         } else { // fetch subscribers of involvedItem
             subscribers = involvedItem.getRelatedTopics(SUBSCRIPTION_EDGE_TYPE,
-                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account",0);
+                DEFAULT_ROLE_TYPE,  DEFAULT_ROLE_TYPE,  "dm4.accesscontrol.user_account");
         }
         for (RelatedTopic subscriber : subscribers) {
             if (subscriber.getId() != accountId) {
                 log.fine("> subscription is valid, notifying user " + subscriber.getSimpleValue());
                 // 1) Create notification instance
-                ChildTopicsModel message = new ChildTopicsModel()
-                        .put(NOTIFICATION_SEEN_TYPE, false)
-                        .put(NOTIFICATION_TITLE_TYPE, title)
-                        .put(NOTIFICATION_BODY_TYPE, text)
-                        .put(NOTIFICATION_SUB_ITEM_ID_TYPE, subscribedItemId)
+                ChildTopicsModel message = mf.newChildTopicsModel()
+                        .put(SEEN_TYPE, false)
+                        .put(TITLE_TYPE, title)
+                        .put(BODY_TYPE, text)
+                        .put(SUBSCRIBED_ITEM_ID_TYPE, subscribedItemId)
                         .putRef(USER_ACCOUNT_TYPE, accountId)
-                        .put(NOTIFICATION_INVOLVED_ITEM_ID_TYPE, involvedItem.getId());
-                TopicModel model = new TopicModel(NOTIFICATION_TYPE, message);
-                dms.createTopic(model); // check: is system the creator?
+                        .put(INVOLVED_ITEM_ID_TYPE, involvedItem.getId());
+                TopicModel model = mf.newTopicModel(NOTIFICATION, message);
+                dm4.createTopic(model); // check: is system the creator?
                 // 2) Hook up notification with subscriber
-                AssociationModel recipient_model = new AssociationModel(NOTIFICATION_RECIPIENT_EDGE_TYPE,
+                AssociationModel recipient_model = mf.newAssociationModel(RECIPIENT_EDGE_TYPE,
                         model.createRoleModel(DEFAULT_ROLE_TYPE),
-                        new TopicRoleModel(subscriber.getId(), DEFAULT_ROLE_TYPE));
-                dms.createAssociation(recipient_model); // check: is system the creator?
+                        mf.newTopicRoleModel(subscriber.getId(), DEFAULT_ROLE_TYPE));
+                dm4.createAssociation(recipient_model); // check: is system the creator?
             }
         }
     }
 
     private boolean associationExists(String edge_type, long itemId, long accountId) {
-        List<Association> results = dms.getAssociations(itemId, accountId, edge_type);
-        return (results.size() > 0) ? true : false;
+        List<Association> results = dm4.getAssociations(itemId, accountId, edge_type);
+        return (results.size() > 0);
     }
 
     private Topic getUserAccountTopic(String username) {
-        Topic user = dms.getTopic("dm4.accesscontrol.username", new SimpleValue(username));
+        Topic user = dm4.getTopicByValue("dm4.accesscontrol.username", new SimpleValue(username));
         return user.getRelatedTopic("dm4.core.composition", "dm4.core.child",
                 "dm4.core.parent", "dm4.accesscontrol.user_account");
     }
