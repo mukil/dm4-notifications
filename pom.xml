@@ -16,10 +16,19 @@
         <version>4.8</version>
     </parent>
 
+    <properties>
+        <dm4.deploy.dir>/home/malted/toff/deepaMehta/deepamehta-4.8/bundle-deploy</dm4.deploy.dir>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>de.deepamehta</groupId>
             <artifactId>deepamehta-core</artifactId>
+            <version>4.8</version>
+        </dependency>
+        <dependency>
+            <groupId>de.deepamehta</groupId>
+            <artifactId>deepamehta-workspaces</artifactId>
             <version>4.8</version>
         </dependency>
         <dependency>

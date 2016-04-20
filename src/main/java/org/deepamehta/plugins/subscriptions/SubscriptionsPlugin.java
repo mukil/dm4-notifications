@@ -13,6 +13,7 @@ import de.deepamehta.accesscontrol.AccessControlService;
 import de.deepamehta.websockets.WebSocketConnection;
 import de.deepamehta.websockets.event.WebsocketTextMessageListener;
 import de.deepamehta.websockets.WebSocketsService;
+import de.deepamehta.workspaces.WorkspacesService;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +47,8 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     private AccessControlService aclService = null;
     @Inject
     private WebSocketsService webSocketsService = null;
+    @Inject
+    private WorkspacesService workspacesService = null;
 
     
 
@@ -80,7 +83,7 @@ public class SubscriptionsPlugin extends PluginActivator implements Subscription
     }
 
     @GET
-    @Path("/")
+    @Path("/subscription")
     public List<RelatedTopic> getSubscriptions() {
         // 0) Check for any session
         String logged_in_username = aclService.getUsername();
