@@ -1,4 +1,4 @@
-package org.deepamehta.plugins.subscriptions;
+package org.deepamehta.subscriptions;
 
 import de.deepamehta.core.DeepaMehtaObject;
 import de.deepamehta.core.RelatedTopic;

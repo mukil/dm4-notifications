@@ -1,4 +1,4 @@
-package org.deepamehta.plugins.subscriptions.migrations;
+package org.deepamehta.subscriptions.migrations;
 
 import de.deepamehta.core.AssociationType;
 import de.deepamehta.core.Topic;
@@ -6,7 +6,7 @@ import de.deepamehta.core.TopicType;
 import de.deepamehta.core.service.Inject;
 import de.deepamehta.workspaces.WorkspacesService;
 import de.deepamehta.core.service.Migration;
-import org.deepamehta.plugins.subscriptions.SubscriptionService;
+import org.deepamehta.subscriptions.SubscriptionService;
 
 
 /**
