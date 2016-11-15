@@ -28,21 +28,19 @@ To be able to install this module you first and additionally have to install the
 
 ## Download & Installation
 
-You can download the latest `dm44-subscriptions-X.Y.Z.jar-`-Bundle from [here](http://download.deepamehta.de/nightly/).
+You can download the latest `dm48-notifications-X.Y.Z.jar-`-Bundle from [here](http://download.deepamehta.de/nightly/).
 
 After downloading the bundle-files, place them (websockets, tags, subscriptions) in the `bundles` folder of your DeepaMehta installation and restart DeepaMehta.
 
 ## Usage 
 
-Installation of this plugin on its own is of limited use for end-users.
+Installation of this plugin on its own is (yet) of limited use for end-users.
 
 The main features of this plugin is a service to be used by other application developers.
 
-For example, the `dm4-notizen-app` makes use of this plugin and provides an examplary user-interface for this service.
-
 ## Application Model
 
-![Screenshot of Subscription Application Model in DM, Selected TopicType Notification](/subscription_model_doc.png)
+![Screenshot of Notification Model in DM, Selected TopicType Notification](/notification_model_doc.png)
 
 ## GNU Public License
 
