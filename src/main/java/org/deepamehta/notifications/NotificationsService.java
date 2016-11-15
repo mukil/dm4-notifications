@@ -21,12 +21,11 @@ public interface NotificationsService {
     public static final String EMAIL_SUBSCRIPTION = "org.deepamehta.mail_subscription";
 
     /**
-     * Create a subscription edge for useraccount to item.
+     * Create a subscription edge to an item.
      *
-     * @param   accountId   topic-id of user account
      * @param   itemId      topic-id of user account
      */
-    public void subscribeInApp(long accountId, long itemId);
+    public void subscribeInApp(long itemId);
 
     /**
      * Remove subscription (edge) for given user account and item.
@@ -34,7 +33,7 @@ public interface NotificationsService {
      * @param  accountId        topic-id of user account
      * @param  itemId           topic-id of subscribed item
      */
-    public void unsubscribe(long accountId, long itemId);
+    public void unsubscribe(long itemId);
 
     /**
      * Creates new notifications for all users with a direct or indirect (tags) subscription to the given item.

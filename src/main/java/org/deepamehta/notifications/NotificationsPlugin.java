@@ -53,18 +53,18 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Inject
     private WorkspacesService workspacesService = null;
 
-    
+    private boolean isAuthenticatedUser() {
+        String logged_in_username = aclService.getUsername();
+        return !logged_in_username.isEmpty();
+    }
 
     @GET
     @Path("/subscribe/{itemId}")
     @Transactional
     public Response subscribeUser(@PathParam("itemId") long itemId) {
-        // 0) Check for any session
-        String logged_in_username = aclService.getUsername();
-        if (!logged_in_username.isEmpty()) {
-            Topic account = aclService.getUsernameTopic(logged_in_username);
-            // 1) Users can just manage their own subscriptions
-            subscribeInApp(account.getId(), itemId);
+        // 0) Check for a valid session
+        if (isAuthenticatedUser()) {
+            subscribeInApp(itemId);
             return Response.ok().build();
         }
         return Response.noContent().build();
@@ -75,11 +75,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Transactional
     public Response unsubscribeUser(@PathParam("itemId") long itemId) {
         // 0) Check for any session
-        String logged_in_username = aclService.getUsername();
-        if (!logged_in_username.isEmpty()) {
-            Topic account = aclService.getUsernameTopic(logged_in_username);
-            // 1) Users can just manage their own subscriptions
-            unsubscribe(account.getId(), itemId);
+        if (isAuthenticatedUser()) {
+            unsubscribe(itemId);
             return Response.ok().build();
         }
         return Response.noContent().build();
@@ -89,12 +86,13 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Path("/subscription")
     public List<RelatedTopic> getSubscriptions() {
         // 0) Check for any session
-        String logged_in_username = aclService.getUsername();
-        if (logged_in_username == null || logged_in_username.isEmpty()) return null;
-        Topic account = aclService.getUsernameTopic(logged_in_username);
-        // 1) Return results
-        log.fine("Listing all subscriptions of user " + account.getSimpleValue());
-        return account.getRelatedTopics(SUBSCRIPTION_EDGE);
+        if (isAuthenticatedUser()) {
+            Topic account = aclService.getUsernameTopic();
+            // 1) Return results
+            log.fine("Listing subscriptions for user \"" + account.getSimpleValue() + "\"");
+            return account.getRelatedTopics(SUBSCRIPTION_EDGE);
+        }
+        return null;
     }
 
     @GET
@@ -115,8 +113,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     public Response setNotificationSeen(@PathParam("newsId") long newsId) {
         try {
             // 0) Check for any session
-            String logged_in_username = aclService.getUsername();
-            if (logged_in_username == null || logged_in_username.isEmpty()) {
+            if (isAuthenticatedUser()) {
                 log.warning("Nobody logged in for whom we could set the notification as seen.");
                 return Response.ok(false).build();
             }
@@ -133,8 +130,25 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     @Override
+    public void subscribeInApp(long itemId) {
+        if (!isAuthenticatedUser()) {
+            throw new RuntimeException("For users to manage their subscriptions they're must be logged in.");
+        }
+        Topic account = aclService.getUsernameTopic(aclService.getUsername());
+        subscribeInApp(account.getId(), itemId);
+    }
+
+    @Override
+    public void unsubscribe(long itemId) {
+        if (!isAuthenticatedUser()) {
+            throw new RuntimeException("For users to manage their subscriptions they're must be logged in.");
+        }
+        Topic account = aclService.getUsernameTopic(aclService.getUsername());
+        unsubscribe(account.getId(), itemId);
+    }
+
     @Transactional
-    public void subscribeInApp(long accountId, long itemId) {
+    private void subscribeInApp(long accountId, long itemId) {
         try {
             // 2) Create an "In App" subscription (if not already existent)
             if (!associationExists(SUBSCRIPTION_EDGE, itemId, accountId)) {
@@ -154,9 +168,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
-    @Override
     @Transactional
-    public void unsubscribe(long accountId, long itemId) {
+    private void unsubscribe(long accountId, long itemId) {
         List<Association> assocs = dm4.getAssociations(accountId, itemId, SUBSCRIPTION_EDGE);
         Iterator<Association> iterator = assocs.iterator();
         while (iterator.hasNext()) {
