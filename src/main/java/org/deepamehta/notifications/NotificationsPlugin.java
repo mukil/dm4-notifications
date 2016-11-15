@@ -53,16 +53,12 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Inject
     private WorkspacesService workspacesService = null;
 
-    private boolean isAuthenticatedUser() {
-        String logged_in_username = aclService.getUsername();
-        return !logged_in_username.isEmpty();
-    }
+
 
     @GET
     @Path("/subscribe/{itemId}")
     @Transactional
     public Response subscribeUser(@PathParam("itemId") long itemId) {
-        // 0) Check for a valid session
         if (isAuthenticatedUser()) {
             subscribeInApp(itemId);
             return Response.ok().build();
@@ -74,7 +70,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Path("/unsubscribe/{itemId}")
     @Transactional
     public Response unsubscribeUser(@PathParam("itemId") long itemId) {
-        // 0) Check for any session
         if (isAuthenticatedUser()) {
             unsubscribe(itemId);
             return Response.ok().build();
@@ -85,10 +80,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @GET
     @Path("/subscription")
     public List<RelatedTopic> getSubscriptions() {
-        // 0) Check for any session
         if (isAuthenticatedUser()) {
             Topic account = aclService.getUsernameTopic();
-            // 1) Return results
             log.fine("Listing subscriptions for user \"" + account.getSimpleValue() + "\"");
             return account.getRelatedTopics(SUBSCRIPTION_EDGE);
         }
@@ -112,14 +105,12 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Transactional
     public Response setNotificationSeen(@PathParam("newsId") long newsId) {
         try {
-            // 0) Check for any session
             if (isAuthenticatedUser()) {
                 log.warning("Nobody logged in for whom we could set the notification as seen.");
                 return Response.ok(false).build();
             }
             Topic notification = dm4.getTopic(newsId).loadChildTopics();
             notification.getChildTopics().set(NOTIFICATION_SEEN, true);
-            // 1) Do operation
             log.fine("Set notification " + newsId + " SEEN");
             return Response.ok(true).build();
         } catch (Exception e) {
@@ -132,7 +123,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public void subscribeInApp(long itemId) {
         if (!isAuthenticatedUser()) {
-            throw new RuntimeException("For users to manage their subscriptions they're must be logged in.");
+            throw new RuntimeException("For users to manage their subscriptions they must be authenticated.");
         }
         Topic account = aclService.getUsernameTopic(aclService.getUsername());
         subscribeInApp(account.getId(), itemId);
@@ -141,7 +132,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public void unsubscribe(long itemId) {
         if (!isAuthenticatedUser()) {
-            throw new RuntimeException("For users to manage their subscriptions they're must be logged in.");
+            throw new RuntimeException("For users to manage their subscriptions they must be authenticated.");
         }
         Topic account = aclService.getUsernameTopic(aclService.getUsername());
         unsubscribe(account.getId(), itemId);
@@ -182,7 +173,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Transactional
     public void notifySubscribers(String title, String message, long actingUsername, DeepaMehtaObject involvedItem) {
         // ### Investigate: In which workspace dor should do this notifications end up?
-        // ### Fixme: I guess we want to have all those created and assigned solely to the "Private Workspace" of the subscribed user...
+        // ### Fixme: I guess we want to have all those created and assigned solely to the "Private Workspace"
         // ...
         // 1) create notifications for all direct subscribers of this user topic
         log.fine("Notifying subscribers of user account \"" + involvedItem.getSimpleValue() + "\"");
@@ -199,7 +190,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             }
         }
         // 3) Notifiy plugin developers to reload notifications for users
-        webSocketsService.broadcast(NOTIFICATON_BUNDLE_URI, "Please reload notifications area for your logged-in user.");
+        webSocketsService.broadcast(NOTIFICATON_BUNDLE_URI, "Please reload notifications area for the user.");
     }
 
     @Override
@@ -241,12 +232,18 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     // ---------------------------------------------------------------------------------------------- Private Methods
 
-    private void createNotificationTopics(String title, String text, long actingUsername, DeepaMehtaObject involvedItem) {
+    private boolean isAuthenticatedUser() {
+        String logged_in_username = aclService.getUsername();
+        return !logged_in_username.isEmpty();
+    }
+
+    private void createNotificationTopics(String title, String text, long actingUsername,
+            DeepaMehtaObject involvedItem) {
         createNotificationTopics(title, text, actingUsername, involvedItem, null);
     }
 
-    private void createNotificationTopics(String title, String text, long actingUsername, DeepaMehtaObject involvedItem,
-            DeepaMehtaObject subscribedItem) {
+    private void createNotificationTopics(String title, String text, long actingUsername,
+            DeepaMehtaObject involvedItem, DeepaMehtaObject subscribedItem) {
         // 0) Fetch all subscribers of item X
         List<RelatedTopic> subscribers = null;
         // 1) Handle indirect subscriptions (where subscribedItem != involvedItem)
@@ -266,8 +263,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
     
-    private void createNotificationTopic(Topic subscriber, String title, String text, long actingUsername, DeepaMehtaObject involvedItem, DeepaMehtaObject subscribedItem) {
-        // Take care that topic and assoc end up in the users "Private Workspace"
+    private void createNotificationTopic(Topic subscriber, String title, String text, long actingUsername,
+            DeepaMehtaObject involvedItem, DeepaMehtaObject subscribedItem) {
+        // ### Fixme: Take care that topic and assoc end up in the users "Private Workspace"
         // 1) Create notification instance
         ChildTopicsModel message = mf.newChildTopicsModel()
                 .put(NOTIFICATION_SEEN, false)
