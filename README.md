@@ -1,13 +1,12 @@
 
-# DeepaMehta 4 Subscriptions
+# DeepaMehta 4 Notifications
 
-The DeepaMehta 4 Subscriptions plugin provides developers the base for realizing a thematic publish/subscribe function.
+The DeepaMehta 4 Notifications plugin makes it easy for developers to create persistent notifications across sessions and screens. It furthermore takes care that the notifications end up in the recipients _Private Workspace_.
 
-The publish/subscribe use case is:
+The use case is:
 
-A user subscribes a tag.  
-Items (topics) are tagged.  
-The user is notified when a such tagged item is changed.  
+A user subscribes a topic.
+The user is notified when the topic is changed.  
 
 Actually the plugin provides:
 *   A *Notification* model (a Topic Type for the _message_)
@@ -25,8 +24,7 @@ https://github.com/jri/deepamehta
 
 To be able to install this module you first and additionally have to install the following DeepaMehta 4 Plugins.
 
-* `dm44-websockets-0.2.2`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
-* `dm44-deepamehta-tags-1.3.8`-Bundle - [Source Code](https://github.com/mukil/dm4.tags), [Nightly Build](http://download.deepamehta.de/nightly/)
+* `dm48-websockets-0.3`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
 
 ## Download & Installation
 
@@ -51,6 +49,17 @@ For example, the `dm4-notizen-app` makes use of this plugin and provides an exam
 This sofware is released under the terms of the GNU General Public License in Version 3.0, 2007.
 
 ## Version History
+
+**1.1**, Upcoming, 2016
+
+* Renamed to dm4-notifications as that better expresses what this plugin is
+* Removed dependency to dm4.tags module
+* Renamed all type URIs
+* Allows to create notifications around any type of involved item
+* Associates subscriptions to username topics instead of user account topics
+* Compatible with DeepaMehta 4.8
+
+Note: This release is not compatible with previous releases and there is no migration provided.
 
 **1.0.3**, Dec 25, 2014
 
