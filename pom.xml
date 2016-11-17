@@ -16,10 +16,10 @@
         <version>4.8.4</version>
     </parent>
 
-    <properties>
-        <!--dm4.deploy.dir>/home/malted/toff/deepaMehta/deepamehta-4.8/bundle-deploy</dm4.deploy.dir-->
+    <!--properties>
+        <dm4.deploy.dir>/home/malted/toff/deepaMehta/deepamehta-4.8/bundle-deploy</dm4.deploy.dir>
         <dm4.deploy.dir>/home/malted/Desktop/Testing/sign-up release/deepamehta-4.8.4/bundle-deploy</dm4.deploy.dir>
-    </properties>
+    </properties-->
 
     <dependencies>
         <dependency>
