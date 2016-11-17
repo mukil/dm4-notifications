@@ -8,7 +8,7 @@ import de.deepamehta.core.service.Inject;
 import de.deepamehta.core.service.Transactional;
 import de.deepamehta.accesscontrol.AccessControlService;
 import de.deepamehta.core.Association;
-import de.deepamehta.core.Role;
+import de.deepamehta.core.DeepaMehtaType;
 import de.deepamehta.core.model.AssociationModel;
 import de.deepamehta.core.model.ChildTopicsModel;
 import de.deepamehta.core.model.TopicModel;
@@ -189,17 +189,22 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         // ### Fixme: I guess we want to have all those created and assigned solely to the "Private Workspace"
         // ...
         // 1) create notifications for all direct subscribers of this user topic
-        log.fine("Notifying subscribers of user account \"" + involvedItem.getSimpleValue() + "\"");
-        createNotificationTopics(title, "", actingUsername, involvedItem);
+        log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
+                + "\" (" + involvedItem.getType().getSimpleValue() + ")");
+        createNotificationTopics(title, message, actingUsername, involvedItem);
         // 2) If involvedItem is tagged, create also notifications for all subscribers of these tag topics
-        if (involvedItem.getChildTopics().getTopicsOrNull(TAG) != null) {
+        List<RelatedTopic> tags = null; // Defensive access check for tags on this topic type (for indirect subscriptions)
+        try {
+            tags = involvedItem.getChildTopics().getTopicsOrNull(TAG);
+        } catch(RuntimeException rex) {
+            log.fine("Skipping expected rex ... " + rex.getMessage());
+        }
+        if (tags != null) {
             // 2.1) go trough all tags of this topic
-            List<RelatedTopic> tags = involvedItem.getChildTopics().getTopics(TAG);
             for (RelatedTopic tag : tags) {
-                Topic tag_node = dm4.getTopic(tag.getId()).loadChildTopics();
-                log.fine("Notifying subscribers of tag \"" + tag_node.getSimpleValue() + "\"");
+                log.info("Notifying subscribers of tag \"" + tag.getSimpleValue() + "\"");
                 // 2.2) for all subscribers of this tag
-                createNotificationTopics(title, "", actingUsername, involvedItem, tag_node);
+                createNotificationTopics(title, message, actingUsername, involvedItem, tag);
             }
         }
         // 3) Notifiy plugin developers to reload notifications for users
@@ -263,16 +268,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public void postCreateAssociation(Association association) {
         if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
-            DeepaMehtaObject player1 = association.getPlayer1();
-            DeepaMehtaObject player2 = association.getPlayer2();
-            if (player1.getTypeUri().equals(TOPICMAP)) {
-                log.info("Added Topic of type \""+ player2.getTypeUri()
-                        + "\" to Topicmap \"" + player1.getSimpleValue() + "\"");
-            } else {
-                log.info("Added Topic of type \"" + player1.getTypeUri()
-                        + "\" to Topicmap \"" + player2.getSimpleValue() + "\"");
-            }
-        } else if (association.getTypeUri().equals(AGGREGATION)) {
+            notifyTopicmapContextSubscribers(association);
+        } /** else if (association.getTypeUri().equals(AGGREGATION)) {
             log.info("Created Association " + association);
             // Topic workspace = association.getTopic(WORKSPACE);
             // When adding a "Date of Birth" or "Phone Entry" to a "Person" entry, or creating an "Event" with a "From" and "To" topic this throws ...
@@ -283,10 +280,32 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                 DeepaMehtaObject workspaceElement = (association.getPlayer1().getTypeUri().equals(WORKSPACE)) ? association.getPlayer1() : association.getPlayer2();
                 log.info("Workspace Assignment of a \"" + otherElement.getTypeUri() + "\" to \"" + workspaceElement.getSimpleValue() + "\"");
             }
-        }
+        } */
     }
 
     // ---------------------------------------------------------------------------------------------- Private Methods
+
+    private void notifyTopicmapContextSubscribers(Association association) {
+        Topic username = aclService.getUsernameTopic(aclService.getUsername());
+        DeepaMehtaObject topic = null;
+        DeepaMehtaObject topicmap = null;
+        if (association.getPlayer1().getTypeUri().equals(TOPICMAP)) {
+            topic = association.getPlayer2();
+            topicmap = association.getPlayer1();
+            log.info("Added Topic of type \""+ topic.getTypeUri()
+                    + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
+        } else {
+            topic = association.getPlayer1();
+            topicmap = association.getPlayer2();
+            log.info("Added Topic of type \"" + topic.getTypeUri()
+                    + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
+        }
+        DeepaMehtaType type = topic.getType();
+        // create notifications for subscribers of the topicmap
+        notifySubscribers(type.getSimpleValue() + " added to Topicmap",
+                "An entry on " + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue()) + " was added to Topicmap \""
+                        + topicmap.getSimpleValue() + "\"", username.getId(), topicmap);
+    }
 
     private boolean isAuthenticatedUser() {
         String logged_in_username = aclService.getUsername();
@@ -312,10 +331,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
         // 3) For all subscribers create the following notification
         for (RelatedTopic subscriber : subscribers) {
-            if (subscriber.getId() != actingUsername) {
-                log.fine("Identified subscription, notifying user " + subscriber.getSimpleValue());
+            // if (subscriber.getId() != actingUsername) { // Do not notifiy the actor...
+                log.info("Identified subscription, notifying user " + subscriber.getSimpleValue());
                 createNotificationTopic(subscriber, title, text, actingUsername, involvedItem, subscribedItem);
-            }
+            // }
         }
     }
     
@@ -327,16 +346,19 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                 .put(NOTIFICATION_SEEN, false)
                 .put(NOTIFICATION_TITLE, title)
                 .put(NOTIFICATION_BODY, text)
-                .put(SUBSCRIBED_ITEM_ID, subscribedItem.getId())
                 .putRef(USERNAME, actingUsername)
                 .put(INVOLVED_ITEM_ID, involvedItem.getId());
+        if (subscribedItem != null) message.put(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
         TopicModel model = mf.newTopicModel(NOTIFICATION, message);
-        dm4.createTopic(model);
+        Topic notification = dm4.createTopic(model);
+        log.info("Created notification " + notification.getId());
+        // Is it possible to colorize this topic by default using topicmaps.setViewProperties()... (not having a topicmap context)
         // 2) Hook up notification with subscriber
         AssociationModel recipient_model = mf.newAssociationModel(NOTIFICATION_RECIPIENT_EDGE,
                 model.createRoleModel(DEFAULT_ROLE),
                 mf.newTopicRoleModel(subscriber.getId(), DEFAULT_ROLE));
-        dm4.createAssociation(recipient_model); // check: is system the creator?
+        Association recipient = dm4.createAssociation(recipient_model); // check: is system the creator?
+        log.info("Created recipient edge " + recipient);
     }
 
     private boolean associationExists(String edge_type, long itemId, long accountId) {
