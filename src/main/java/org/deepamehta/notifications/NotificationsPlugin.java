@@ -194,9 +194,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     @Transactional
     public void notifySubscribers(String title, String message, long actingUsername, DeepaMehtaObject involvedItem) {
-        // ### Investigate: In which workspace dor should do this notifications end up?
-        // ### Fixme: I guess we want to have all those created and assigned solely to the "Private Workspace"
-        // ...
         // 1) create notifications for all direct subscribers of this user topic
         log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
                 + "\" (" + involvedItem.getType().getSimpleValue() + ")");
@@ -276,25 +273,14 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public void postDeleteTopic(TopicModel tm) {
-        log.info("Deleted Topic " + tm);
+        // log.info("Deleted Topic " + tm);
     }
 
     @Override
     public void postCreateAssociation(Association association) {
         if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
             notifyTopicmapSubscribersAboutNewTopic(association);
-        } /** else if (association.getTypeUri().equals(AGGREGATION)) {
-            log.info("Created Association " + association);
-            // Topic workspace = association.getTopic(WORKSPACE);
-            // When adding a "Date of Birth" or "Phone Entry" to a "Person" entry, or creating an "Event" with a "From" and "To" topic this throws ...
-            DeepaMehtaObject player1 = association.getPlayer1(); // graphdb.NotFoundException: 'value' property not found for NodeImpl#6581
-            if (association.getPlayer1().getTypeUri().equals(WORKSPACE)
-             || association.getPlayer2().getTypeUri().equals(WORKSPACE)) {
-                DeepaMehtaObject otherElement = (association.getPlayer1().getTypeUri().equals(WORKSPACE)) ? association.getPlayer2() : association.getPlayer1();
-                DeepaMehtaObject workspaceElement = (association.getPlayer1().getTypeUri().equals(WORKSPACE)) ? association.getPlayer1() : association.getPlayer2();
-                log.info("Workspace Assignment of a \"" + otherElement.getTypeUri() + "\" to \"" + workspaceElement.getSimpleValue() + "\"");
-            }
-        } */
+        }
     }
 
     // ---------------------------------------------------------------------------------------------- Private Methods
@@ -337,7 +323,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
         DeepaMehtaType type = topic.getType();
         if (!topic.getTypeUri().equals(NOTIFICATION)) {
-            // create notifications for subscribers of the topicmap (but not for notification topics added to the map)
             notifySubscribers(type.getSimpleValue() + " added to Topicmap",
                 "An entry on " + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
                         + " was added to Topicmap \"" + topicmap.getSimpleValue() + "\"", username.getId(), topicmap);
