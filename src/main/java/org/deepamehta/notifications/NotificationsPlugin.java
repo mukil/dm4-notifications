@@ -8,9 +8,14 @@ import de.deepamehta.core.service.Inject;
 import de.deepamehta.core.service.Transactional;
 import de.deepamehta.accesscontrol.AccessControlService;
 import de.deepamehta.core.Association;
+import de.deepamehta.core.Role;
 import de.deepamehta.core.model.AssociationModel;
 import de.deepamehta.core.model.ChildTopicsModel;
 import de.deepamehta.core.model.TopicModel;
+import de.deepamehta.core.service.event.PostCreateAssociationListener;
+import de.deepamehta.core.service.event.PostCreateTopicListener;
+import de.deepamehta.core.service.event.PostDeleteTopicListener;
+import de.deepamehta.core.service.event.PostUpdateTopicListener;
 import de.deepamehta.core.util.DeepaMehtaUtils;
 import de.deepamehta.websockets.WebSocketConnection;
 import de.deepamehta.websockets.WebSocketsService;
@@ -34,17 +39,25 @@ import javax.ws.rs.core.Response;
 
 @Path("/notifications")
 public class NotificationsPlugin extends PluginActivator implements NotificationsService,
-                                                                    WebsocketTextMessageListener {
+                                                                    WebsocketTextMessageListener,
+                                                                    PostUpdateTopicListener,
+                                                                    PostCreateTopicListener,
+                                                                    PostDeleteTopicListener,
+                                                                    PostCreateAssociationListener {
 
     private static Logger log = Logger.getLogger(NotificationsPlugin.class.getName());
 
-    private static final String NOTIFICATON_BUNDLE_URI = "org.deepamehta.notifications";
+    private static final String NOTIFICATON_BUNDLE_URI  = "org.deepamehta.notifications";
 
-    // These two types of information can currently be subscribed (with their special semantics)
-    private static final String USERNAME = "dm4.accesscontrol.username";
-    private static final String TAG = "dm4.tags.tag";
+    private static final String WORKSPACE               = "dm4.workspaces.workspace";
+    private static final String TOPICMAP                = "dm4.topicmaps.topicmap";
+    private static final String TOPICMAP_MAPCONTEXT     = "dm4.topicmaps.topic_mapcontext";
+    private static final String NOTE                    = "dm4.notes.note";
+    private static final String USERNAME                = "dm4.accesscontrol.username";
+    private static final String TAG                     = "dm4.tags.tag";
 
-    private static final String DEFAULT_ROLE = "dm4.core.default";
+    private static final String AGGREGATION             = "dm4.core.aggregation";
+    private static final String DEFAULT_ROLE            = "dm4.core.default";
 
     @Inject
     private AccessControlService aclService = null;
@@ -228,6 +241,49 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public void websocketTextMessage(String string, WebSocketConnection wsc) {
         log.info("### Received Websocket Text Message: " + string);
+    }
+
+    // ------------------------------------------------------------------------------------------- Listening to Hooks
+
+    @Override
+    public void postCreateTopic(Topic topic) {
+        log.info("Created Topic " + topic.getSimpleValue());
+    }
+
+    @Override
+    public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
+        log.info("Updated Topic " + topic.getSimpleValue());
+    }
+
+    @Override
+    public void postDeleteTopic(TopicModel tm) {
+        log.info("Deleted Topic " + tm);
+    }
+
+    @Override
+    public void postCreateAssociation(Association association) {
+        if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
+            DeepaMehtaObject player1 = association.getPlayer1();
+            DeepaMehtaObject player2 = association.getPlayer2();
+            if (player1.getTypeUri().equals(TOPICMAP)) {
+                log.info("Added Topic of type \""+ player2.getTypeUri()
+                        + "\" to Topicmap \"" + player1.getSimpleValue() + "\"");
+            } else {
+                log.info("Added Topic of type \"" + player1.getTypeUri()
+                        + "\" to Topicmap \"" + player2.getSimpleValue() + "\"");
+            }
+        } else if (association.getTypeUri().equals(AGGREGATION)) {
+            log.info("Created Association " + association);
+            // Topic workspace = association.getTopic(WORKSPACE);
+            // When adding a "Date of Birth" or "Phone Entry" to a "Person" entry, or creating an "Event" with a "From" and "To" topic this throws ...
+            DeepaMehtaObject player1 = association.getPlayer1(); // graphdb.NotFoundException: 'value' property not found for NodeImpl#6581
+            if (association.getPlayer1().getTypeUri().equals(WORKSPACE)
+             || association.getPlayer2().getTypeUri().equals(WORKSPACE)) {
+                DeepaMehtaObject otherElement = (association.getPlayer1().getTypeUri().equals(WORKSPACE)) ? association.getPlayer2() : association.getPlayer1();
+                DeepaMehtaObject workspaceElement = (association.getPlayer1().getTypeUri().equals(WORKSPACE)) ? association.getPlayer1() : association.getPlayer2();
+                log.info("Workspace Assignment of a \"" + otherElement.getTypeUri() + "\" to \"" + workspaceElement.getSimpleValue() + "\"");
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------------------------- Private Methods
