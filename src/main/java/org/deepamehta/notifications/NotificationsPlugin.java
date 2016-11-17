@@ -60,6 +60,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     private static final String WORKSPACE               = "dm4.workspaces.workspace";
     private static final String TOPICMAP                = "dm4.topicmaps.topicmap";
     private static final String TOPICMAP_MAPCONTEXT     = "dm4.topicmaps.topic_mapcontext";
+    private static final String PRIVATE_TOPICMAP        = "dm4.topicmaps.private";
     private static final String NOTE                    = "dm4.notes.note";
     private static final String USERNAME                = "dm4.accesscontrol.username";
     private static final String TAG                     = "dm4.tags.tag";
@@ -300,17 +301,18 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topic, long workspaceId) {
         Topic username = aclService.getUsernameTopic(aclService.getUsername());
-        // ### TODO: Skip notification if this "Topicmap" is marked as "Private" or if it is created in a "Private Workspace"...
-        // or if the subscribed user is not a "READ" member of that very workspace...
-        log.info("Notifying subscribers about new topicmap created by \""+username+"\" in workspaceId=" + workspaceId);
         if (topic.getTypeUri().equals(TOPICMAP)) {
+            boolean isPrivate = topic.getChildTopics().getBoolean(PRIVATE_TOPICMAP);
             try {
-                Topic workspace = dm4.getTopic(workspaceId);
-                log.info("New Topicmap \"" + topic.getSimpleValue() + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
-                // create notifications for subscribers of the topicmap (but not for notification topics added to the map)
-                notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
-                        + workspace.getSimpleValue() + "\"", "A new topicmap was created by \"" + username.getSimpleValue()
-                        + "\" in workspace \"" + workspace.getSimpleValue() + "\"", username.getId(), workspace);
+                if (!isPrivate) {
+                    Topic workspace = dm4.getTopic(workspaceId);
+                    log.fine("Notifying subscribers about new topicmap created by \"" + username.getSimpleValue()
+                            + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
+                    notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
+                            + workspace.getSimpleValue() + "\"", "A new topicmap was created by \""
+                            + username.getSimpleValue() + "\" in workspace \"" + workspace.getSimpleValue() + "\"",
+                            username.getId(), workspace);
+                }
             } catch (RuntimeException rex) {
                 log.warning("Could not create notifications because user has no permission to "
                     +"access workspaceId=" + workspaceId + ", Exception:" + rex.getMessage());
@@ -325,12 +327,12 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (association.getPlayer1().getTypeUri().equals(TOPICMAP)) {
             topic = association.getPlayer2();
             topicmap = association.getPlayer1();
-            log.info("Added Topic of type \""+ topic.getTypeUri()
+            log.fine("Added Topic of type \""+ topic.getTypeUri()
                     + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
         } else {
             topic = association.getPlayer1();
             topicmap = association.getPlayer2();
-            log.info("Added Topic of type \"" + topic.getTypeUri()
+            log.fine("Added Topic of type \"" + topic.getTypeUri()
                     + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
         }
         DeepaMehtaType type = topic.getType();
@@ -366,7 +368,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
         // 3) For all subscribers create the following notification
         for (RelatedTopic subscriber : subscribers) {
-            // 3.1) Except for the actor herself, she does not get a notification on her action.
+            // 3.1) Except for the actor herself, she does not get a notification on her action
             if (subscriber.getId() != actingUsername) {
                 log.info("Identified subscription, notifying user " + subscriber.getSimpleValue());
                 createNotificationTopic(subscriber, title, text, actingUsername, involvedItem, subscribedItem);
@@ -390,16 +392,22 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                     if (subscribedItem != null) message.put(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
                     TopicModel model = mf.newTopicModel(NOTIFICATION, message);
                     Topic notification = dm4.createTopic(model);
-                    Topic privateWorkspace = dm4.getAccessControl().getPrivateWorkspace(subscriber.getSimpleValue().toString());
+                    Topic privateWorkspace = dm4.getAccessControl()
+                            .getPrivateWorkspace(subscriber.getSimpleValue().toString());
                     dm4.getAccessControl().assignToWorkspace(notification, privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(NOTIFICATION_TITLE), privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(NOTIFICATION_BODY), privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(NOTIFICATION_SEEN), privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(INVOLVED_ITEM_ID), privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                            .getTopic(NOTIFICATION_TITLE), privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                            .getTopic(NOTIFICATION_BODY), privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                            .getTopic(NOTIFICATION_SEEN), privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                            .getTopic(INVOLVED_ITEM_ID), privateWorkspace.getId());
                     if (subscribedItem != null) {
-                        dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(SUBSCRIBED_ITEM_ID), privateWorkspace.getId());
+                        dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                                .getTopic(SUBSCRIBED_ITEM_ID), privateWorkspace.getId());
                     }
-                    // Improvement: Try using topicmaps.setViewProperties()... (not having a topicmap context) to colorize..
+                    // Improvement: Try using topicmaps.setViewProperties()... (not having a topicmap) to colorize..
                     // 2) Hook up notification with subscriber
                     AssociationModel recipientModel = mf.newAssociationModel(NOTIFICATION_RECIPIENT_EDGE,
                             model.createRoleModel(DEFAULT_ROLE),

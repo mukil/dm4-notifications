@@ -53,8 +53,10 @@ This sofware is released under the terms of the GNU General Public License in Ve
 * Renamed to dm4-notifications as that better expresses what this plugin is
 * Removed dependency to dm4.tags module
 * Renamed all type URIs
-* Allows to create notifications around any type of involved item
-* Associates subscriptions to username topics instead of user account topics
+* Allows to create subscriptions around any type of topic
+* Associates subscriptions to (public) username instead of (private) user account topics
+* Stores all notifications in the "Private Workspace of the subscribed user
+* Per default: Support (In-App) subscriptions on "Workspace" (New Topicmaps) and "Topicmap" (Topics added) by default
 * Compatible with DeepaMehta 4.8
 
 Note: This release is not compatible with previous releases and there is no migration provided.
