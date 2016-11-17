@@ -258,11 +258,13 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public void postCreateTopic(Topic topic) {
-        if (topic.getTypeUri().equals(TOPICMAP)) {
-            long workspaceId = dm4.getAccessControl().getAssignedWorkspaceId(topic.getId());
-            notifyWorkspaceSubscribersAboutNewTopicmap(topic, workspaceId);
-        } else if (topic.getTypeUri().equals(NOTE)) {
-            log.info("Created Note " + topic.getSimpleValue());
+        if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
+            if (topic.getTypeUri().equals(TOPICMAP)) {
+                long workspaceId = dm4.getAccessControl().getAssignedWorkspaceId(topic.getId());
+                notifyWorkspaceSubscribersAboutNewTopicmap(topic, workspaceId);
+            } else if (topic.getTypeUri().equals(NOTE)) {
+                log.info("Created Note " + topic.getSimpleValue());
+            }
         }
     }
 
@@ -278,8 +280,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public void postCreateAssociation(Association association) {
-        if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
-            notifyTopicmapSubscribersAboutNewTopic(association);
+        if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
+            if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
+                notifyTopicmapSubscribersAboutNewTopic(association);
+            }
         }
     }
 
@@ -330,8 +334,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     private boolean isAuthenticatedUser() {
-        String logged_in_username = aclService.getUsername();
-        return !logged_in_username.isEmpty();
+        String username = aclService.getUsername();
+        return (username != null && !username.isEmpty());
     }
 
     private void createNotificationTopics(String title, String text, long actingUsername,
