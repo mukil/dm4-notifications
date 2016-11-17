@@ -28,7 +28,7 @@ import javax.ws.rs.core.Response;
  * A DeepaMehta 4 Plugin introducing notifications on subscribed topics based on dm4-websockets.
  *
  * @author Malte Reißig
- * @version 1.0
+ * @version 1.1
  *
  */
 

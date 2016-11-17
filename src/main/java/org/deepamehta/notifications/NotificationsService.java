@@ -30,7 +30,6 @@ public interface NotificationsService {
     /**
      * Remove subscription (edge) for given user account and item.
      *
-     * @param  accountId        topic-id of user account
      * @param  itemId           topic-id of subscribed item
      */
     public void unsubscribe(long itemId);
