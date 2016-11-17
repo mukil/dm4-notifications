@@ -260,10 +260,11 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public void postCreateTopic(Topic topic) {
-        log.info("Created Topic " + topic.getSimpleValue());
         if (topic.getTypeUri().equals(TOPICMAP)) {
             long workspaceId = dm4.getAccessControl().getAssignedWorkspaceId(topic.getId());
             notifyWorkspaceSubscribersAboutNewTopicmap(topic, workspaceId);
+        } else if (topic.getTypeUri().equals(NOTE)) {
+            log.info("Created Note " + topic.getSimpleValue());
         }
     }
 
@@ -365,10 +366,11 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
         // 3) For all subscribers create the following notification
         for (RelatedTopic subscriber : subscribers) {
-            // if (subscriber.getId() != actingUsername) { // Do not notifiy the actor...
+            // 3.1) Except for the actor herself, she does not get a notification on her action.
+            if (subscriber.getId() != actingUsername) {
                 log.info("Identified subscription, notifying user " + subscriber.getSimpleValue());
                 createNotificationTopic(subscriber, title, text, actingUsername, involvedItem, subscribedItem);
-            // }
+            }
         }
     }
 
