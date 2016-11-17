@@ -24,9 +24,17 @@ import de.deepamehta.workspaces.WorkspacesService;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import static org.deepamehta.notifications.NotificationsService.INVOLVED_ITEM_ID;
+import static org.deepamehta.notifications.NotificationsService.NOTIFICATION;
+import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_BODY;
+import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_RECIPIENT_EDGE;
+import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_SEEN;
+import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_TITLE;
 
 /**
  *
@@ -197,7 +205,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         try {
             tags = involvedItem.getChildTopics().getTopicsOrNull(TAG);
         } catch(RuntimeException rex) {
-            log.fine("Skipping expected rex ... " + rex.getMessage());
+            log.fine("Skipping expected RuntimeException ... " + rex.getMessage());
         }
         if (tags != null) {
             // 2.1) go trough all tags of this topic
@@ -253,11 +261,15 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public void postCreateTopic(Topic topic) {
         log.info("Created Topic " + topic.getSimpleValue());
+        if (topic.getTypeUri().equals(TOPICMAP)) {
+            long workspaceId = dm4.getAccessControl().getAssignedWorkspaceId(topic.getId());
+            notifyWorkspaceSubscribersAboutNewTopicmap(topic, workspaceId);
+        }
     }
 
     @Override
     public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
-        log.info("Updated Topic " + topic.getSimpleValue());
+        // log.info("Updated Topic " + topic.getSimpleValue());
     }
 
     @Override
@@ -268,7 +280,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public void postCreateAssociation(Association association) {
         if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
-            notifyTopicmapContextSubscribers(association);
+            notifyTopicmapSubscribersAboutNewTopic(association);
         } /** else if (association.getTypeUri().equals(AGGREGATION)) {
             log.info("Created Association " + association);
             // Topic workspace = association.getTopic(WORKSPACE);
@@ -285,7 +297,27 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     // ---------------------------------------------------------------------------------------------- Private Methods
 
-    private void notifyTopicmapContextSubscribers(Association association) {
+    private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topic, long workspaceId) {
+        Topic username = aclService.getUsernameTopic(aclService.getUsername());
+        // ### TODO: Skip notification if this "Topicmap" is marked as "Private" or if it is created in a "Private Workspace"...
+        // or if the subscribed user is not a "READ" member of that very workspace...
+        log.info("Notifying subscribers about new topicmap created by \""+username+"\" in workspaceId=" + workspaceId);
+        if (topic.getTypeUri().equals(TOPICMAP)) {
+            try {
+                Topic workspace = dm4.getTopic(workspaceId);
+                log.info("New Topicmap \"" + topic.getSimpleValue() + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
+                // create notifications for subscribers of the topicmap (but not for notification topics added to the map)
+                notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
+                        + workspace.getSimpleValue() + "\"", "A new topicmap was created by \"" + username.getSimpleValue()
+                        + "\" in workspace \"" + workspace.getSimpleValue() + "\"", username.getId(), workspace);
+            } catch (RuntimeException rex) {
+                log.warning("Could not create notifications because user has no permission to "
+                    +"access workspaceId=" + workspaceId + ", Exception:" + rex.getMessage());
+            }
+        }
+    }
+
+    private void notifyTopicmapSubscribersAboutNewTopic(Association association) {
         Topic username = aclService.getUsernameTopic(aclService.getUsername());
         DeepaMehtaObject topic = null;
         DeepaMehtaObject topicmap = null;
@@ -301,10 +333,12 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                     + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
         }
         DeepaMehtaType type = topic.getType();
-        // create notifications for subscribers of the topicmap
-        notifySubscribers(type.getSimpleValue() + " added to Topicmap",
-                "An entry on " + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue()) + " was added to Topicmap \""
-                        + topicmap.getSimpleValue() + "\"", username.getId(), topicmap);
+        if (!topic.getTypeUri().equals(NOTIFICATION)) {
+            // create notifications for subscribers of the topicmap (but not for notification topics added to the map)
+            notifySubscribers(type.getSimpleValue() + " added to Topicmap",
+                "An entry on " + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
+                        + " was added to Topicmap \"" + topicmap.getSimpleValue() + "\"", username.getId(), topicmap);
+        }
     }
 
     private boolean isAuthenticatedUser() {
@@ -337,28 +371,45 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             // }
         }
     }
-    
-    private void createNotificationTopic(Topic subscriber, String title, String text, long actingUsername,
-            DeepaMehtaObject involvedItem, DeepaMehtaObject subscribedItem) {
-        // ### Fixme: Take care that topic and assoc end up in the users "Private Workspace"
-        // 1) Create notification instance
-        ChildTopicsModel message = mf.newChildTopicsModel()
-                .put(NOTIFICATION_SEEN, false)
-                .put(NOTIFICATION_TITLE, title)
-                .put(NOTIFICATION_BODY, text)
-                .putRef(USERNAME, actingUsername)
-                .put(INVOLVED_ITEM_ID, involvedItem.getId());
-        if (subscribedItem != null) message.put(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
-        TopicModel model = mf.newTopicModel(NOTIFICATION, message);
-        Topic notification = dm4.createTopic(model);
-        log.info("Created notification " + notification.getId());
-        // Is it possible to colorize this topic by default using topicmaps.setViewProperties()... (not having a topicmap context)
-        // 2) Hook up notification with subscriber
-        AssociationModel recipient_model = mf.newAssociationModel(NOTIFICATION_RECIPIENT_EDGE,
-                model.createRoleModel(DEFAULT_ROLE),
-                mf.newTopicRoleModel(subscriber.getId(), DEFAULT_ROLE));
-        Association recipient = dm4.createAssociation(recipient_model); // check: is system the creator?
-        log.info("Created recipient edge " + recipient);
+
+    private void createNotificationTopic(final Topic subscriber, final String title, final String text,
+            final long actingUsername, final DeepaMehtaObject involvedItem, final DeepaMehtaObject subscribedItem) {
+        try {
+            dm4.getAccessControl().runWithoutWorkspaceAssignment(new Callable<Topic>() {
+                @Override
+                public Topic call() {
+                    // 1) Create instance of notification
+                    ChildTopicsModel message = mf.newChildTopicsModel()
+                            .put(NOTIFICATION_SEEN, false)
+                            .put(NOTIFICATION_TITLE, title)
+                            .put(NOTIFICATION_BODY, text)
+                            .putRef(USERNAME, actingUsername)
+                            .put(INVOLVED_ITEM_ID, involvedItem.getId());
+                    if (subscribedItem != null) message.put(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
+                    TopicModel model = mf.newTopicModel(NOTIFICATION, message);
+                    Topic notification = dm4.createTopic(model);
+                    Topic privateWorkspace = dm4.getAccessControl().getPrivateWorkspace(subscriber.getSimpleValue().toString());
+                    dm4.getAccessControl().assignToWorkspace(notification, privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(NOTIFICATION_TITLE), privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(NOTIFICATION_BODY), privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(NOTIFICATION_SEEN), privateWorkspace.getId());
+                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(INVOLVED_ITEM_ID), privateWorkspace.getId());
+                    if (subscribedItem != null) {
+                        dm4.getAccessControl().assignToWorkspace(notification.getChildTopics().getTopic(SUBSCRIBED_ITEM_ID), privateWorkspace.getId());
+                    }
+                    // Improvement: Try using topicmaps.setViewProperties()... (not having a topicmap context) to colorize..
+                    // 2) Hook up notification with subscriber
+                    AssociationModel recipientModel = mf.newAssociationModel(NOTIFICATION_RECIPIENT_EDGE,
+                            model.createRoleModel(DEFAULT_ROLE),
+                            mf.newTopicRoleModel(subscriber.getId(), DEFAULT_ROLE));
+                    Association recipient = dm4.createAssociation(recipientModel);
+                    dm4.getAccessControl().assignToWorkspace(recipient, privateWorkspace.getId());
+                    return notification;
+                }
+            });
+        } catch (Exception ex) {
+            throw new RuntimeException("Creating notification for user "+subscriber.getSimpleValue()+" failed", ex);
+        }
     }
 
     private boolean associationExists(String edge_type, long itemId, long accountId) {
