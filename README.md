@@ -17,7 +17,7 @@ Actually the plugin provides:
 
 A subscription is created (using DeepaMehta's Webclient) through drawing an association of type `Notification Subscription` between a `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
 
-![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_75perc.png)
+![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_860.png)
 
 When logged in you can find all notifications for you after clicking on your username topic in the upper right corner of the DeepaMehta Webclient. Then, reveal the very first topic, the one which represents your actual _Username_ and you will see all _Notifications_ related to your username. Sorry for this inconvenience. Currently we have no special display which delivers you notifications in a more convenient way. But of course, you're very welcome to encourage us or help us to design or create one :)
 
