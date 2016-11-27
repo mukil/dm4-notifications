@@ -19,8 +19,9 @@ A subscription is created (using DeepaMehta's Webclient) through drawing an asso
 
 ![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_75perc.png)
 
-When logged in you can find all notifications for you after clicking on your username topic in the upper right corner of the DeepaMehta Webclient. Then, reveal the very first topic, the one which represents your actual _Username_ and you will see all _Notifications_ related to your username. All the notifications are accessible to you only and can therefore also be revealed through revealing your `Private Workspace`. Sorry for this inconvenience. Currently there is no other special display available to deliver the notifications to you in a more convenient way but, of course, you could help us design and create one :)
+When logged in you can find all notifications for you after clicking on your username topic in the upper right corner of the DeepaMehta Webclient. Then, reveal the very first topic, the one which represents your actual _Username_ and you will see all _Notifications_ related to your username. Sorry for this inconvenience. Currently we have no special display which delivers you notifications in a more convenient way. But of course, you're very welcome to encourage us or help us to design or create one :)
 
+Your _Notifications_ are accessible and readable to you only (unless you share them). For that reason you can find your notifications also in the related section after  revealing your `Private Workspace`.
 
 ## Requirements
 
