@@ -15,7 +15,12 @@ Actually the plugin provides:
     *    Manage subscriptions (subscribe/unsubscribe)
     *    Create notifications (persistent notifcations for all users who subscribed given item)
 
-A subscription-edge (associating a user with a subscribed item) can have many subscription types (as child topics). The plugin developers conceived two basic subscription types in advance: `In-App` (delivery via dm4-websockets) and `Mail` (not yet implemented).
+A subscription is created (using DeepaMehta's Webclient) through drawing an association of type `Notification Subscription` between a `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
+
+![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_75perc.png)
+
+When logged in you can find all notifications for you after clicking on your username topic in the upper right corner of the DeepaMehta Webclient. Then, reveal the very first topic, the one which represents your actual _Username_ and you will see all _Notifications_ related to your username. All the notifications are accessible to you only and can therefore also be revealed through revealing your `Private Workspace`. Sorry for this inconvenience. Currently there is no other special display available to deliver the notifications to you in a more convenient way but, of course, you could help us design and create one :)
+
 
 ## Requirements
 
@@ -50,7 +55,7 @@ This sofware is released under the terms of the GNU General Public License in Ve
 
 **1.1**, Upcoming, 2016
 
-* Renamed to dm4-notifications as that better expresses what this plugin is
+* Renamed plugin to dm4-notifications as the new better expresses what this plugin is all about
 * Removed dependency to dm4.tags module
 * Renamed all type URIs
 * Allows to create subscriptions around any type of topic
