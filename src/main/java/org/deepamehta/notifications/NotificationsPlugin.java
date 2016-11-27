@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -62,11 +61,18 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     private static final String TOPICMAP_MAPCONTEXT     = "dm4.topicmaps.topic_mapcontext";
     private static final String PRIVATE_TOPICMAP        = "dm4.topicmaps.private";
     private static final String NOTE                    = "dm4.notes.note";
+    private static final String NOTE_TEXT               = "dm4.notes.text";
     private static final String USERNAME                = "dm4.accesscontrol.username";
     private static final String TAG                     = "dm4.tags.tag";
 
     private static final String AGGREGATION             = "dm4.core.aggregation";
+    private static final String AGGREGATION_DEF         = "dm4.core.aggregation_def";
+    private static final String COMPOSITION             = "dm4.core.composition";
+    private static final String COMPOSITION_DEF         = "dm4.core.composition_def";
+
     private static final String DEFAULT_ROLE            = "dm4.core.default";
+    private static final String CHILD                   = "dm4.core.child";
+    private static final String PARENT                  = "dm4.core.parent";
 
     @Inject
     private AccessControlService aclService = null;
@@ -74,7 +80,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     private WebSocketsService webSocketsService = null;
     @Inject
     private WorkspacesService workspacesService = null;
-
+    /** @Inject
+    private SendgridService sendgrid = null; **/
 
 
     @GET
@@ -197,7 +204,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         // 1) create notifications for all direct subscribers of this user topic
         log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
                 + "\" (" + involvedItem.getType().getSimpleValue() + ")");
-        createNotificationTopics(title, message, actingUsername, involvedItem);
+        createNotifications(title, message, actingUsername, involvedItem);
         // 2) If involvedItem is tagged, create also notifications for all subscribers of these tag topics
         List<RelatedTopic> tags = null; // Defensive access check for tags on this topic type (for indirect subscriptions)
         try {
@@ -210,7 +217,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             for (RelatedTopic tag : tags) {
                 log.info("Notifying subscribers of tag \"" + tag.getSimpleValue() + "\"");
                 // 2.2) for all subscribers of this tag
-                createNotificationTopics(title, message, actingUsername, involvedItem, tag);
+                createNotifications(title, message, actingUsername, involvedItem, tag);
             }
         }
         // 3) Notifiy plugin developers to reload notifications for users
@@ -219,9 +226,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public List<RelatedTopic> getNotifications() {
-        String logged_in_username = aclService.getUsername();
-        if (logged_in_username == null || logged_in_username.isEmpty()) return null;
-        Topic account = aclService.getUsernameTopic(logged_in_username);
+        if (!isAuthenticatedUser()) {
+            throw new RuntimeException("For users to read their notifications they must be authenticated.");
+        }
+        Topic account = aclService.getUsernameTopic(aclService.getUsername());
         //
         List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
                 DEFAULT_ROLE, DEFAULT_ROLE, NOTIFICATION);
@@ -232,9 +240,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public ArrayList<RelatedTopic> getUnseenNotifications() {
-        String logged_in_username = aclService.getUsername();
-        if (logged_in_username == null || logged_in_username.isEmpty()) return null;
-        Topic account = aclService.getUsernameTopic(logged_in_username);
+        if (!isAuthenticatedUser()) {
+            throw new RuntimeException("For users to read their notifications they must be authenticated.");
+        }
+        Topic account = aclService.getUsernameTopic(aclService.getUsername());
         //
         ArrayList<RelatedTopic> unseen = new ArrayList<RelatedTopic>();
         List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
@@ -270,7 +279,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
-        // log.info("Updated Topic " + topic.getSimpleValue());
+        if (topic.getTypeUri().equals(NOTE_TEXT)) {
+            log.info("Note updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
+            notifyTopicSubscribersAboutChangeset(topic, tm, tm1);
+        }
     }
 
     @Override
@@ -289,19 +301,41 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     // ---------------------------------------------------------------------------------------------- Private Methods
 
+    private void notifyTopicSubscribersAboutChangeset(Topic childValueTopicEdited, TopicModel tm1, TopicModel tm2) {
+        Topic actingUsername = aclService.getUsernameTopic(aclService.getUsername());
+        List parentAssocTypesUris = new ArrayList();
+        parentAssocTypesUris.add(AGGREGATION);
+        parentAssocTypesUris.add(COMPOSITION);
+        List<RelatedTopic> parentTopics = childValueTopicEdited.getRelatedTopics(parentAssocTypesUris,
+                CHILD, PARENT, null);
+        // The following limitation is SAFE as long (see Line 282) as we just support subscriptions on "Note" topics
+        // TODO: Potentially many topic which subscribers should be notified. Skipping support for this, taking any.
+        if (parentTopics.size() > 0) {
+            RelatedTopic subscribedItem = parentTopics.get(0);
+            notifySubscribers("Topic \"" + subscribedItem.getSimpleValue()
+                    + "\" edited by user \""+actingUsername.getSimpleValue()+"\"", "<p>As a subscriber of topic \""
+                    + subscribedItem.getSimpleValue() +"\" you receive this automatic "
+                    + "notification about the update of " + childValueTopicEdited.getType().getSimpleValue()
+                        + " by <em>"+actingUsername.getSimpleValue() +"</em>.</p>"
+                    +"<h3>"+ subscribedItem.getType().getSimpleValue() +" Before</h3><p>"+ tm2.getSimpleValue() +"</p>"
+                    +"<h3>"+ subscribedItem.getType().getSimpleValue() +" After</h3><p>"+ tm1.getSimpleValue() +"</p>",
+                    actingUsername.getId(), subscribedItem);
+        }
+    }
+
     private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topic, long workspaceId) {
-        Topic username = aclService.getUsernameTopic(aclService.getUsername());
+        Topic actingUsername = aclService.getUsernameTopic(aclService.getUsername());
         if (topic.getTypeUri().equals(TOPICMAP)) {
             boolean isPrivate = topic.getChildTopics().getBoolean(PRIVATE_TOPICMAP);
             try {
                 if (!isPrivate) {
                     Topic workspace = dm4.getTopic(workspaceId);
-                    log.fine("Notifying subscribers about new topicmap created by \"" + username.getSimpleValue()
+                    log.fine("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
                             + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
                     notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
-                            + workspace.getSimpleValue() + "\"", "A new topicmap was created by \""
-                            + username.getSimpleValue() + "\" in workspace \"" + workspace.getSimpleValue() + "\"",
-                            username.getId(), workspace);
+                            + workspace.getSimpleValue() +"\"", "A new topicmap was created by \""
+                            + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
+                            actingUsername.getId(), workspace);
                 }
             } catch (RuntimeException rex) {
                 log.warning("Could not create notifications because user has no permission to "
@@ -311,7 +345,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     private void notifyTopicmapSubscribersAboutNewTopic(Association association) {
-        Topic username = aclService.getUsernameTopic(aclService.getUsername());
+        Topic actingUser = aclService.getUsernameTopic(aclService.getUsername());
         DeepaMehtaObject topic = null;
         DeepaMehtaObject topicmap = null;
         if (association.getPlayer1().getTypeUri().equals(TOPICMAP)) {
@@ -327,9 +361,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
         DeepaMehtaType type = topic.getType();
         if (!topic.getTypeUri().equals(NOTIFICATION)) {
-            notifySubscribers(type.getSimpleValue() + " added to Topicmap",
+            notifySubscribers(type.getSimpleValue() + " added to Topicmap \"" + topicmap.getSimpleValue() + "\"",
                 "An entry on " + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
-                        + " was added to Topicmap \"" + topicmap.getSimpleValue() + "\"", username.getId(), topicmap);
+                        + " was added to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap);
         }
     }
 
@@ -338,12 +372,21 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         return (username != null && !username.isEmpty());
     }
 
-    private void createNotificationTopics(String title, String text, long actingUsername,
+    private void createNotifications(String title, String text, long actingUsername,
             DeepaMehtaObject involvedItem) {
-        createNotificationTopics(title, text, actingUsername, involvedItem, null);
+        createNotifications(title, text, actingUsername, involvedItem, null);
     }
 
-    private void createNotificationTopics(String title, String text, long actingUsername,
+    /**
+     * Takes care that a notification for each subscriber gets created.
+     * ### Todo: Check if subscription is of type "In App" or "Email".
+     * @param title
+     * @param text
+     * @param actingUsername
+     * @param involvedItem
+     * @param subscribedItem
+     */
+    private void createNotifications(String title, String text, long actingUsername,
             DeepaMehtaObject involvedItem, DeepaMehtaObject subscribedItem) {
         // 0) Fetch all subscribers of item X
         List<RelatedTopic> subscribers = null;
@@ -361,10 +404,27 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             if (subscriber.getId() != actingUsername) {
                 log.info("Identified subscription, notifying user " + subscriber.getSimpleValue());
                 createNotificationTopic(subscriber, title, text, actingUsername, involvedItem, subscribedItem);
+                // ### sendMailNotification(subscriber, title, text, actingUsername, involvedItem, subscribedItem);
             }
         }
     }
 
+    /** private void sendMailNotification(final Topic subscriber, final String title, final String text,
+            final long actingUsername, final DeepaMehtaObject involvedItem, final DeepaMehtaObject subscribedItem) {
+        log.info("Sending mail notificatino vai sendgrid to \"" + subscriber.getSimpleValue() + "\"");
+        sendgrid.doEmailUser(subscriber.getSimpleValue().toString(), title, text);
+    } **/
+
+    /**
+     * Creates a notification topic in the \"Private workspace\" of the given user represented by the "subscriber"
+     * topic and associates it with its "Username" using an association of type "Notification Recipient".
+     * @param subscriber
+     * @param title
+     * @param text
+     * @param actingUsername
+     * @param involvedItem
+     * @param subscribedItem
+     */
     private void createNotificationTopic(final Topic subscriber, final String title, final String text,
             final long actingUsername, final DeepaMehtaObject involvedItem, final DeepaMehtaObject subscribedItem) {
         try {

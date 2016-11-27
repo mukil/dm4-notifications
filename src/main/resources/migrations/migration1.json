@@ -117,6 +117,7 @@
                     "childs": {
                         "dm4.webclient.show_in_create_menu": false,
                         "dm4.webclient.searchable_as_unit": false,
+                        "dm4.webclient.icon": "/org.deepamehta.notifications/images/ball-light-green.png",
                         "dm4.webclient.rows": 1
                     }
                 }
@@ -153,7 +154,7 @@
                 {
                     "type_uri": "dm4.webclient.view_config",
                     "childs": {
-                        "dm4.webclient.color": "#A9C9CB"
+                        "dm4.webclient.color": "#f3ca69"
                     }
                 }
             ]
