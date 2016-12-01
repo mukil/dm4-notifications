@@ -19,6 +19,14 @@ A subscription is created (using DeepaMehta's Webclient) through drawing an asso
 
 ![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_860.png)
 
+For the mentioned subscriptions the following actions will notify subscribers:
+*   Workspace: Whenever a `New Topicmap` (which is not `Private`) is created in it
+*   Topicmap: Whenever another user with write permission `adds a topic` to it
+*   Note: Whenever another user with WRITE permissions `Edits` the notes content<br/>
+    (while, in this case, the content before and after the edit is copied as content of the notifications)
+
+### Accessing notifications (In-App) 
+
 When logged in you can find all notifications for you after clicking on your username topic in the upper right corner of the DeepaMehta Webclient. Then, reveal the very first topic, the one which represents your actual _Username_ and you will see all _Notifications_ related to your username. Sorry for this inconvenience. Currently we have no special display which delivers you notifications in a more convenient way. But of course, you're very welcome to encourage us or help us to design or create one :)
 
 Your _Notifications_ are accessible and readable to you only (unless you share them). For that reason you can find your notifications also in the related section after  revealing your `Private Workspace`.
@@ -60,9 +68,10 @@ This sofware is released under the terms of the GNU General Public License in Ve
 * Removed dependency to dm4.tags module
 * Renamed all type URIs
 * Allows to create subscriptions around any type of topic
+* Adapted client side plugin.js to receive websocket notifications (broadcasts)
 * Associates subscriptions to (public) username instead of (private) user account topics
 * Stores all notifications in the "Private Workspace of the subscribed user
-* Per default: Support (In-App) subscriptions on "Workspace" (New Topicmaps) and "Topicmap" (Topics added) by default
+* Per default: Support subscriptions of changes in a `Workspace` (New Topicmaps), in a `Topicmap` (Topics added) or to a `Note`s (Content updated)
 * Compatible with DeepaMehta 4.8
 
 Note: This release is not compatible with previous releases and there is no migration provided.
