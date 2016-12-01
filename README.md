@@ -23,11 +23,15 @@ For the mentioned subscriptions the following actions will notify subscribers:
 *   Workspace: Whenever a `New Topicmap` (which is not `Private`) is created in it
 *   Topicmap: Whenever another user with write permission `adds a topic` to it
 *   Note: Whenever another user with WRITE permissions `Edits` the notes content<br/>
-    (while, in this case, the content before and after the edit is copied as content of the notifications)
+    (while, in this case, the notificiation includes a "kind of diff" of the edits, [see this screen](https://github.com/mukil/dm4-notifications/blob/master/docs/screen_c_notification_topics_75perc.png))
 
 ### Accessing notifications (In-App) 
 
-When logged in you can find all notifications for you after clicking on your username topic in the upper right corner of the DeepaMehta Webclient. Then, reveal the very first topic, the one which represents your actual _Username_ and you will see all _Notifications_ related to your username. Sorry for this inconvenience. Currently we have no special display which delivers you notifications in a more convenient way. But of course, you're very welcome to encourage us or help us to design or create one :)
+When logged in you find your notifications related to your username (click it to reveal your User Account topic in the in the upper right corner of the DeepaMehta Webclient). Then, reveal the very first topic, the one which represents your actual _Username_. Related to this item you will find all _Notifications_.
+
+![Accessing your notification in the Webclient](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_b_notification_topics_75perc.png)
+
+Sorry for this inconvenience. Currently we have no special display which delivers you notifications in a more convenient way. But of course, you're very welcome to encourage us or help us to design or create one :)
 
 Your _Notifications_ are accessible and readable to you only (unless you share them). For that reason you can find your notifications also in the related section after  revealing your `Private Workspace`.
 
