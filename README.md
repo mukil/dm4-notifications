@@ -15,6 +15,8 @@ Actually the plugin provides:
     *    Manage subscriptions (subscribe/unsubscribe)
     *    Create notifications (persistent notifcations for all users who subscribed given item)
 
+## Usage: Subscribe items to receive notifications
+
 A subscription is created (using DeepaMehta's Webclient) through drawing an association of type `Notification Subscription` between a `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
 
 ![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_860.png)
@@ -23,7 +25,7 @@ For the mentioned subscriptions the following actions will notify subscribers:
 *   Workspace: Whenever a `New Topicmap` (which is not `Private`) is created in it
 *   Topicmap: Whenever another user with write permission `adds a topic` to it
 *   Note: Whenever another user with WRITE permissions `Edits` the notes content<br/>
-    (while, in this case, the notificiation includes a "kind of diff" of the edits, [see this screen](https://github.com/mukil/dm4-notifications/blob/master/docs/screen_c_notification_topics_75perc.png))
+    (In this case, the notificiation includes the old and the new contents of the topic, [example](https://github.com/mukil/dm4-notifications/blob/master/docs/screen_c_notification_topics_75perc.png))
 
 ### Accessing notifications (In-App) 
 
@@ -46,15 +48,9 @@ To be able to install this module you first and additionally have to install the
 
 ## Download & Installation
 
-You can download the latest `dm48-notifications-X.Y.Z.jar-`-Bundle from [here](http://download.deepamehta.de/nightly/).
+You can download the latest stable `dm48-notifications`-Bundle [here](http://download.deepamehta.de/).
 
-After downloading the bundle-files, place them (websockets, tags, subscriptions) in the `bundles` folder of your DeepaMehta installation and restart DeepaMehta.
-
-## Usage 
-
-Installation of this plugin on its own is (yet) of limited use for end-users.
-
-The main features of this plugin is a service to be used by other application developers.
+After downloading the bundle-files, place both plugins (dm4-websockets & dm4-notifications) in the `bundles-deploy` folder of your DeepaMehta 4 installation.
 
 ## Application Model
 
@@ -66,7 +62,7 @@ This sofware is released under the terms of the GNU General Public License in Ve
 
 ## Version History
 
-**1.1**, Upcoming, 2016
+**1.1**, December 20, 2016
 
 * Renamed plugin to dm4-notifications as the new better expresses what this plugin is all about
 * Removed dependency to dm4.tags module
