@@ -17,7 +17,7 @@ Actually the plugin provides:
 
 ## Usage: Subscribe items to receive notifications
 
-A subscription is created (using DeepaMehta's Webclient) through drawing an association of type `Notification Subscription` between a `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
+A subscription is created (using DeepaMehta's Webclient) through using the `Subscribe` command on topics or drawing an association of type `Notification Subscription` between your `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
 
 ![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_860.png)
 
@@ -62,10 +62,11 @@ This sofware is released under the terms of the GNU General Public License in Ve
 
 ## Version History
 
-**1.1**, December 20, 2016
+**1.1**, Jan 04, 2017
 
 * Renamed plugin to dm4-notifications as the new better expresses what this plugin is all about
 * Removed dependency to dm4.tags module
+* Introduced `Subscribe` topic command
 * Renamed all type URIs
 * Allows to create subscriptions around any type of topic
 * Adapted client side plugin.js to receive websocket notifications (broadcasts)
@@ -91,5 +92,5 @@ Note: This release is not compatible with previous releases and there is no migr
 - compatible with DM4.2
 
 --------------------------
-Author: Malte Reißig, 2014
+Author: Malte Reißig, 2014 - 2017
 

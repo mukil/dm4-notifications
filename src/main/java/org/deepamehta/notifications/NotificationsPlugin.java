@@ -118,6 +118,17 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     @GET
+    @Path("/subscription/{itemId}")
+    public String getSubscription(@PathParam("itemId") long itemId) {
+        if (isAuthenticatedUser()) {
+            Topic account = aclService.getUsernameTopic();
+            log.info("Checking subscription for user \"" + account.getSimpleValue() + "\" on item " + itemId);
+            return "" + associationExists(SUBSCRIPTION_EDGE, itemId, account.getId());
+        }
+        return "" + false;
+    }
+
+    @GET
     @Path("/notification")
     public List<RelatedTopic> getNotificationsForUser() {
         return getNotifications();
