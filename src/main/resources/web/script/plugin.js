@@ -13,19 +13,23 @@ dm4c.add_plugin('org.deepamehta.notifications', function() {
             websocket = new WebSocket(url, BUNDLE_URI)
             websocket.onopen = function(e) {
                 console.log("Opening Notification WebSocket connection to " + e.target.url)
-                websocket.send("Hello Notifications -WebSockets server! I am a "  + window.navigator.userAgent)
+                websocket.send("Hello Notifications - WebSockets server! I am a "  + window.navigator.userAgent)
             }
             websocket.onmessage = function(e) {
-                console.log("Received message, we should fetch unseen notifications and render them ... ("+e+")")
+                console.log("Received message, we should fetch unseen notifications and render them", e)
             }
 
             websocket.onclose = function(e) {
                 console.log("Closing Notification WebSocket connection to " + e.target.url + " (" + e.reason + ")", e)
                 console.log("Reopening Notification Websocket connection ...")
-                setTimeout(create_websocket_listener, 5000)
+                setTimeout(function() {
+                    websocket = undefined
+                    url = dm4c.restc.request("GET", "/websockets")["dm4.websockets.url"]
+                    create_websocket_listener()
+                }, 3000)
             }
         } else {
-            console.error('could not fetch websocket url configuration to create a websocket connection')
+            console.error('could not create a new websocket connection', websocket, url)
         }
     }
 
