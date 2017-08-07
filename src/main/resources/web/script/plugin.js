@@ -3,28 +3,29 @@ dm4c.add_plugin('org.deepamehta.notifications', function() {
 
     var websocket = undefined
     var aclPlugin = undefined
+    var url = dm4c.restc.request("GET", "/websockets")["dm4.websockets.url"]
 
-    var WEBSOCKET_HOST = document.location.hostname // Fixme: Use dm4.host.url?
-    var WEBSOCKET_PORT = 8081   // Fixme: Use dm4.websocket.port
     var BUNDLE_URI = "org.deepamehta.notifications"
     var SUBSCRIPTION_EDGE_URI = "org.deepamehta.notification_subscription_edge"
 
     function create_websocket_listener() {
-
-        if (!websocket) {
-            websocket = new WebSocket("ws://" + WEBSOCKET_HOST + ":" + WEBSOCKET_PORT, BUNDLE_URI)
-
+        if (!websocket && url) {
+            websocket = new WebSocket(url, BUNDLE_URI)
             websocket.onopen = function(e) {
-                console.log("Opening Notification WebSocket connection to " + e.target.url, e)
+                console.log("Opening Notification WebSocket connection to " + e.target.url)
                 websocket.send("Hello Notifications -WebSockets server! I am a "  + window.navigator.userAgent)
             }
             websocket.onmessage = function(e) {
-                console.log("Received message, we should fetch unseen notifications and re-render the users toolbar ..")
+                console.log("Received message, we should fetch unseen notifications and render them ... ("+e+")")
             }
 
             websocket.onclose = function(e) {
                 console.log("Closing Notification WebSocket connection to " + e.target.url + " (" + e.reason + ")", e)
+                console.log("Reopening Notification Websocket connection ...")
+                setTimeout(create_websocket_listener, 5000)
             }
+        } else {
+            console.error('could not fetch websocket url configuration to create a websocket connection')
         }
     }
 
@@ -37,7 +38,7 @@ dm4c.add_plugin('org.deepamehta.notifications', function() {
             dataType: "text", processData: false,
             async: false,
             success: function(data, text_status, jq_xhr) {
-                console.log("Subscription created", data)
+                // console.log("Has user subscribed selected_object?", data) // debug
                 check = data
             },
             error: function(jq_xhr, text_status, error_thrown) {

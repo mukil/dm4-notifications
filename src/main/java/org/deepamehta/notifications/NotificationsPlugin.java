@@ -305,7 +305,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     public void postCreateAssociation(Association association) {
         if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
             if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
-                notifyTopicmapSubscribersAboutNewTopic(association);
+                notifyTopicmapSubscribersAboutNewTopicInMap(association);
             }
         }
     }
@@ -355,7 +355,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
-    private void notifyTopicmapSubscribersAboutNewTopic(Association association) {
+    private void notifyTopicmapSubscribersAboutNewTopicInMap(Association association) {
         Topic actingUser = aclService.getUsernameTopic();
         DeepaMehtaObject topic = null;
         DeepaMehtaObject topicmap = null;
