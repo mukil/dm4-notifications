@@ -75,11 +75,11 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     private static final String PARENT                  = "dm4.core.parent";
 
     @Inject
-    private AccessControlService aclService = null;
+    private AccessControlService accesscontrol = null;
     @Inject
-    private WebSocketsService webSocketsService = null;
+    private WebSocketsService websocket = null;
     @Inject
-    private WorkspacesService workspacesService = null;
+    private WorkspacesService workspaces = null;
     /** @Inject
     private SendgridService sendgrid = null; **/
 
@@ -110,7 +110,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Path("/subscription")
     public List<RelatedTopic> getSubscriptions() {
         if (isAuthenticatedUser()) {
-            Topic account = aclService.getUsernameTopic();
+            Topic account = accesscontrol.getUsernameTopic();
             log.fine("Listing subscriptions for user \"" + account.getSimpleValue() + "\"");
             return account.getRelatedTopics(SUBSCRIPTION_EDGE);
         }
@@ -121,7 +121,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Path("/subscription/{itemId}")
     public String getSubscription(@PathParam("itemId") long itemId) {
         if (isAuthenticatedUser()) {
-            Topic account = aclService.getUsernameTopic();
+            Topic account = accesscontrol.getUsernameTopic();
             log.info("Checking subscription for user \"" + account.getSimpleValue() + "\" on item " + itemId);
             return "" + associationExists(SUBSCRIPTION_EDGE, itemId, account.getId());
         }
@@ -165,7 +165,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (!isAuthenticatedUser()) {
             throw new RuntimeException("For users to manage their subscriptions they must be authenticated.");
         }
-        Topic account = aclService.getUsernameTopic();
+        Topic account = accesscontrol.getUsernameTopic();
         subscribeInApp(account.getId(), itemId);
     }
 
@@ -174,7 +174,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (!isAuthenticatedUser()) {
             throw new RuntimeException("For users to manage their subscriptions they must be authenticated.");
         }
-        Topic account = aclService.getUsernameTopic();
+        Topic account = accesscontrol.getUsernameTopic();
         unsubscribe(account.getId(), itemId);
     }
 
@@ -232,7 +232,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             }
         }
         // 3) Notifiy plugin developers to reload notifications for users
-        webSocketsService.broadcast(NOTIFICATON_BUNDLE_URI, "Please reload notifications area for the user.");
+        websocket.broadcast(NOTIFICATON_BUNDLE_URI, "Please reload notifications area for the user.");
     }
 
     @Override
@@ -240,7 +240,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (!isAuthenticatedUser()) {
             throw new RuntimeException("For users to read their notifications they must be authenticated.");
         }
-        Topic account = aclService.getUsernameTopic();
+        Topic account = accesscontrol.getUsernameTopic();
         //
         List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
                 DEFAULT_ROLE, DEFAULT_ROLE, NOTIFICATION);
@@ -254,7 +254,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (!isAuthenticatedUser()) {
             throw new RuntimeException("For users to read their notifications they must be authenticated.");
         }
-        Topic account = aclService.getUsernameTopic();
+        Topic account = accesscontrol.getUsernameTopic();
         //
         ArrayList<RelatedTopic> unseen = new ArrayList<RelatedTopic>();
         List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
@@ -313,7 +313,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     // ---------------------------------------------------------------------------------------------- Private Methods
 
     private void notifyTopicSubscribersAboutChangeset(Topic childValueTopicEdited, TopicModel tm1, TopicModel tm2) {
-        Topic actingUsername = aclService.getUsernameTopic();
+        Topic actingUsername = accesscontrol.getUsernameTopic();
         List parentAssocTypesUris = new ArrayList();
         parentAssocTypesUris.add(AGGREGATION);
         parentAssocTypesUris.add(COMPOSITION);
@@ -335,7 +335,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topic, long workspaceId) {
-        Topic actingUsername = aclService.getUsernameTopic();
+        Topic actingUsername = accesscontrol.getUsernameTopic();
         if (topic.getTypeUri().equals(TOPICMAP)) {
             boolean isPrivate = topic.getChildTopics().getBoolean(PRIVATE_TOPICMAP);
             try {
@@ -356,7 +356,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     private void notifyTopicmapSubscribersAboutNewTopicInMap(Association association) {
-        Topic actingUser = aclService.getUsernameTopic();
+        Topic actingUser = accesscontrol.getUsernameTopic();
         DeepaMehtaObject topic = null;
         DeepaMehtaObject topicmap = null;
         if (association.getPlayer1().getTypeUri().equals(TOPICMAP)) {
@@ -379,7 +379,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     private boolean isAuthenticatedUser() {
-        String username = aclService.getUsername();
+        String username = accesscontrol.getUsername();
         return (username != null && !username.isEmpty());
     }
 
