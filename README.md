@@ -44,7 +44,7 @@ https://github.com/jri/deepamehta
 
 To be able to install this module you first and additionally have to install the following DeepaMehta 4 Plugins.
 
-* `dm48-websockets-0.3`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
+* `dm48-websockets-0.4`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
 
 ## Download & Installation
 
@@ -61,6 +61,11 @@ After downloading the bundle-files, place both plugins (dm4-websockets & dm4-not
 This sofware is released under the terms of the GNU General Public License in Version 3.0, 2007.
 
 ## Version History
+
+**1.2**, Aug 11, 2017
+
+Maintenance release:
+* Adapted to be compatible with DeepaMehta 4.8.6 and DM 4 Websockets 0.4
 
 **1.1**, Jan 04, 2017
 
