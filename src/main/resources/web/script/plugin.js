@@ -1,36 +1,15 @@
 
 dm4c.add_plugin('org.deepamehta.notifications', function() {
 
-    var websocket = undefined
     var aclPlugin = undefined
-    var url = dm4c.restc.request("GET", "/websockets")["dm4.websockets.url"]
+    var websocketPlugin = undefined
+
 
     var BUNDLE_URI = "org.deepamehta.notifications"
     var SUBSCRIPTION_EDGE_URI = "org.deepamehta.notification_subscription_edge"
 
-    function create_websocket_listener() {
-        if (!websocket && url) {
-            websocket = new WebSocket(url, BUNDLE_URI)
-            websocket.onopen = function(e) {
-                console.log("Opening Notification WebSocket connection to " + e.target.url)
-                websocket.send("Hello Notifications - WebSockets server! I am a "  + window.navigator.userAgent)
-            }
-            websocket.onmessage = function(e) {
-                console.log("Received message, we should fetch unseen notifications and render them", e)
-            }
-
-            websocket.onclose = function(e) {
-                console.log("Closing Notification WebSocket connection to " + e.target.url + " (" + e.reason + ")", e)
-                console.log("Reopening Notification Websocket connection ...")
-                setTimeout(function() {
-                    websocket = undefined
-                    url = dm4c.restc.request("GET", "/websockets")["dm4.websockets.url"]
-                    create_websocket_listener()
-                }, 3000)
-            }
-        } else {
-            console.error('could not create a new websocket connection', websocket, url)
-        }
+    function on_message(message) {
+        console.log("Recieved websocket message", message)
     }
 
     function subscription_exists() {
@@ -101,18 +80,20 @@ dm4c.add_plugin('org.deepamehta.notifications', function() {
 
     dm4c.add_listener("init_3", function() {
         if (is_logged_in()) {
-            create_websocket_listener()
+            websocketPlugin = dm4c.get_plugin("de.deepamehta.websockets")
+            websocketPlugin.create_websocket(BUNDLE_URI, on_message)
         }
     })
 
     dm4c.add_listener("logged_in", function() {
-        create_websocket_listener()
+        websocketPlugin = dm4c.get_plugin("de.deepamehta.websockets")
+        websocketPlugin.create_websocket(BUNDLE_URI, on_message)
     })
 
     dm4c.add_listener("authority_decreased", function() {
         if (!is_logged_in()) {
-            websocket.close()
-            websocket = undefined
+            // websocketPlugin.close()
+            console.log('TOOD: close websocket connection..')
         }
     })
 
