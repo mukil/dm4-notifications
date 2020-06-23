@@ -10,7 +10,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import systems.dmx.accesscontrol.AccessControlService;
 import systems.dmx.core.Assoc;
-import static systems.dmx.core.Constants.COMPOSITION;
+import static systems.dmx.core.Constants.*;
 import systems.dmx.core.DMXObject;
 import systems.dmx.core.DMXType;
 import systems.dmx.core.RelatedTopic;
@@ -56,15 +56,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     private static final String TOPICMAP                = "dmx.topicmaps.topicmap";
     private static final String TOPICMAP_MAPCONTEXT     = "dmx.topicmaps.topic_mapcontext";
-    private static final String PRIVATE_TOPICMAP        = "dmx.topicmaps.private";
     private static final String NOTE                    = "dmx.notes.note";
     private static final String NOTE_TEXT               = "dmx.notes.text";
     private static final String USERNAME                = "dmx.accesscontrol.username";
     private static final String TAG                     = "dmx.tags.tag";
-
-    private static final String DEFAULT_ROLE            = "dmx.core.default";
-    private static final String CHILD                   = "dmx.core.child";
-    private static final String PARENT                  = "dmx.core.parent";
 
     @Inject
     private AccessControlService accesscontrol = null;
@@ -174,8 +169,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             // 2) Create an "In App" subscription (if not already existent)
             if (!associationExists(SUBSCRIPTION_EDGE, itemId, accountId)) {
                 AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
-                    mf.newTopicPlayerModel(accountId, DEFAULT_ROLE),
-                    mf.newTopicPlayerModel(itemId, DEFAULT_ROLE),
+                    mf.newTopicPlayerModel(accountId, DEFAULT),
+                    mf.newTopicPlayerModel(itemId, DEFAULT),
                     mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
                 dmx.createAssoc(model);
                 log.info("New subscription for user:" + accountId + " to item:" + itemId);
@@ -233,7 +228,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         Topic account = accesscontrol.getUsernameTopic();
         //
         List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
-                DEFAULT_ROLE, DEFAULT_ROLE, NOTIFICATION);
+                DEFAULT, DEFAULT, NOTIFICATION);
         log.fine("Fetching " +results.size()+ " notifications for user " + account.getSimpleValue());
         DMXUtils.loadChildTopics(results);
         return results;
@@ -248,7 +243,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         //
         ArrayList<RelatedTopic> unseen = new ArrayList<RelatedTopic>();
         List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
-                DEFAULT_ROLE, DEFAULT_ROLE, NOTIFICATION);
+                DEFAULT, DEFAULT, NOTIFICATION);
         for (RelatedTopic notification : results) {
             boolean seen_child = notification.getChildTopics().getBoolean(NOTIFICATION_SEEN);
             if (!seen_child) {
@@ -318,21 +313,13 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topic, long workspaceId) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
         if (topic.getTypeUri().equals(TOPICMAP)) {
-            boolean isPrivate = topic.getChildTopics().getBoolean(PRIVATE_TOPICMAP);
-            try {
-                if (!isPrivate) {
-                    Topic workspace = dmx.getTopic(workspaceId);
-                    log.fine("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
-                            + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
-                    notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
-                            + workspace.getSimpleValue() +"\"", "A new topicmap was created by \""
-                            + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
-                            actingUsername.getId(), workspace);
-                }
-            } catch (RuntimeException rex) {
-                log.warning("Could not create notifications because user has no permission to "
-                    +"access workspaceId=" + workspaceId + ", Exception:" + rex.getMessage());
-            }
+            Topic workspace = dmx.getTopic(workspaceId);
+            log.fine("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
+                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
+            notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
+                    + workspace.getSimpleValue() +"\"", "A new topicmap was created by \""
+                    + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
+                    actingUsername.getId(), workspace);
         }
     }
 
@@ -385,10 +372,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         // 1) Handle indirect subscriptions (where subscribedItem != involvedItem)
         if (subscribedItem != null) { // fetch subscribers of subscribedItem
             subscribers = subscribedItem.getRelatedTopics(SUBSCRIPTION_EDGE,
-                DEFAULT_ROLE, DEFAULT_ROLE, USERNAME);
+                DEFAULT, DEFAULT, USERNAME);
         } else { // 2) Handle direct subscriptions to involvedItem
             subscribers = involvedItem.getRelatedTopics(SUBSCRIPTION_EDGE,
-                DEFAULT_ROLE, DEFAULT_ROLE, USERNAME);
+                DEFAULT, DEFAULT, USERNAME);
         }
         // 3) For all subscribers create the following notification
         for (RelatedTopic subscriber : subscribers) {
@@ -451,8 +438,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                     // Improvement: Try using topicmaps.setViewProperties()... (not having a topicmap) to colorize..
                     // 2) Hook up notification with subscriber
                     AssocModel recipientModel = mf.newAssocModel(NOTIFICATION_RECIPIENT_EDGE,
-                            model.createPlayerModel(DEFAULT_ROLE),
-                            mf.newTopicPlayerModel(subscriber.getId(), DEFAULT_ROLE));
+                            model.createPlayerModel(DEFAULT),
+                            mf.newTopicPlayerModel(subscriber.getId(), DEFAULT));
                     Assoc recipient = dmx.createAssoc(recipientModel);
                     dmx.getPrivilegedAccess().assignToWorkspace(recipient, privateWorkspace.getId());
                     return notification;
