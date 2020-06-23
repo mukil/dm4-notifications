@@ -2,136 +2,118 @@
     "topic_types": [
         {
             "value": "Notification Title",
-            "uri": "org.deepamehta.notification_title",
-            "data_type_uri": "dm4.core.text",
-            "view_config_topics": [
+            "uri": "dmx.notification_title",
+            "dataTypeUri": "dmx.core.text",
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.show_in_create_menu": false,
-                        "dm4.webclient.searchable_as_unit": false,
-                        "dm4.webclient.rows": 1
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.add_to_create_menu": false
                     }
                 }
             ]
         },
         {
             "value": "Notification Body",
-            "uri": "org.deepamehta.notification_body",
-            "data_type_uri": "dm4.core.text",
-            "view_config_topics": [
+            "uri": "dmx.notification_body",
+            "dataTypeUri": "dmx.core.text",
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.show_in_create_menu": false,
-                        "dm4.webclient.searchable_as_unit": false,
-                        "dm4.webclient.rows": 1
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.add_to_create_menu": false
                     }
                 }
             ]
         },
         {
             "value": "Notification Seen",
-            "uri": "org.deepamehta.notification_seen",
-            "data_type_uri": "dm4.core.boolean",
-            "view_config_topics": [
+            "uri": "dmx.notification_seen",
+            "dataTypeUri": "dmx.core.boolean",
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.show_in_create_menu": false,
-                        "dm4.webclient.searchable_as_unit": false
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.add_to_create_menu": false
                     }
                 }
             ]
         },
         {
             "value": "Involved Item ID",
-            "uri": "org.deepamehta.involved_item_id",
-            "data_type_uri": "dm4.core.number",
-            "view_config_topics": [
+            "uri": "dmx.involved_item_id",
+            "dataTypeUri": "dmx.core.number",
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.show_in_create_menu": false,
-                        "dm4.webclient.searchable_as_unit": false,
-                        "dm4.webclient.rows": 1
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.add_to_create_menu": false
                     }
                 }
             ]
         },
         {
             "value": "Subscribed Item ID",
-            "uri": "org.deepamehta.subscribed_item_id",
-            "data_type_uri": "dm4.core.number",
-            "view_config_topics": [
+            "uri": "dmx.subscribed_item_id",
+            "dataTypeUri": "dmx.core.number",
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.show_in_create_menu": false,
-                        "dm4.webclient.searchable_as_unit": false,
-                        "dm4.webclient.rows": 1
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.add_to_create_menu": false
                     }
                 }
             ]
         },
         {
             "value": "Notification",
-            "uri": "org.deepamehta.notification",
-            "data_type_uri": "dm4.core.composite",
-            "assoc_defs": [
+            "uri": "dmx.notification",
+            "dataTypeUri": "dmx.core.entity",
+            "compDefs": [
                 {
-                    "child_type_uri": "org.deepamehta.notification_title",
-                    "child_cardinality_uri": "dm4.core.one",
-                    "assoc_type_uri": "dm4.core.composition_def"
+                    "childTypeUri": "dmx.notification_title",
+                    "childCardinalityUri": "dmx.core.one"
                 },
                 {
-                    "child_type_uri": "org.deepamehta.notification_body",
-                    "child_cardinality_uri": "dm4.core.one",
-                    "assoc_type_uri": "dm4.core.composition_def"
+                    "childTypeUri": "dmx.notification_body",
+                    "childCardinalityUri": "dmx.core.one"
                 },
                 {
-                    "child_type_uri": "org.deepamehta.notification_seen",
-                    "child_cardinality_uri": "dm4.core.one",
-                    "assoc_type_uri": "dm4.core.composition_def"
+                    "childTypeUri": "dmx.notification_seen",
+                    "childCardinalityUri": "dmx.core.one"
                 },
                 {
-                    "child_type_uri": "org.deepamehta.involved_item_id",
-                    "child_cardinality_uri": "dm4.core.one",
-                    "assoc_type_uri": "dm4.core.composition_def"
+                    "childTypeUri": "dmx.involved_item_id",
+                    "childCardinalityUri": "dmx.core.one"
                 },
                 {
-                    "child_type_uri": "org.deepamehta.subscribed_item_id",
-                    "child_cardinality_uri": "dm4.core.one",
-                    "assoc_type_uri": "dm4.core.composition_def"
+                    "childTypeUri": "dmx.subscribed_item_id",
+                    "childCardinalityUri": "dmx.core.one"
                 },
                 {
-                    "child_type_uri": "dm4.accesscontrol.username",
-                    "child_cardinality_uri": "dm4.core.one",
-                    "parent_cardinality_uri": "dm4.core.one",
-                    "assoc_type_uri": "dm4.core.aggregation_def"
+                    "childTypeUri": "dmx.accesscontrol.username",
+                    "childCardinalityUri": "dmx.core.one"
                 }
             ],
-            "view_config_topics": [
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.show_in_create_menu": false,
-                        "dm4.webclient.searchable_as_unit": false,
-                        "dm4.webclient.icon": "/org.deepamehta.notifications/images/ball-light-green.png",
-                        "dm4.webclient.rows": 1
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.add_to_create_menu": false,
+                        "dmx.webclient.icon": "/dmx.notifications/images/ball-light-green.png"
                     }
                 }
             ]
         },
         {
             "value": "Subscription Type",
-            "uri": "org.deepamehta.subscription_type",
-            "data_type_uri": "dm4.core.text",
-            "view_config_topics": [
+            "uri": "dmx.subscription_type",
+            "dataTypeUri": "dmx.core.text",
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.color": "#FFF2BE"
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.color": "#FFF2BE"
                     }
                 }
             ]
@@ -140,34 +122,32 @@
     "assoc_types": [
         {
             "value": "Notification Subscription",
-            "uri": "org.deepamehta.notification_subscription_edge",
-            "data_type_uri": "dm4.core.composite",
-            "assoc_defs": [
+            "uri": "dmx.notification_subscription_edge",
+            "dataTypeUri": "dmx.core.composite",
+            "compDefs": [
                 {
-                    "child_type_uri": "org.deepamehta.subscription_type",
-                    "child_cardinality_uri": "dm4.core.many",
-                    "parent_cardinality_uri": "dm4.core.one",
-                    "assoc_type_uri": "dm4.core.aggregation_def"
+                    "childTypeUri": "dmx.subscription_type",
+                    "childCardinalityUri": "dmx.core.many"
                 }
             ],
-            "view_config_topics": [
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.color": "#f3ca69"
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.color": "#f3ca69"
                     }
                 }
             ]
         },
         {
             "value": "Notification Recipient",
-            "uri": "org.deepamehta.notification_recipient_edge",
-            "data_type_uri": "dm4.core.number",
-            "view_config_topics": [
+            "uri": "dmx.notification_recipient_edge",
+            "dataTypeUri": "dmx.core.number",
+            "viewConfigTopics": [
                 {
-                    "type_uri": "dm4.webclient.view_config",
-                    "childs": {
-                        "dm4.webclient.color": "#F38A69"
+                    "typeUri": "dmx.webclient.view_config",
+                    "children": {
+                        "dmx.webclient.color": "#F38A69"
                     }
                 }
             ]
@@ -175,13 +155,13 @@
     ],
     "topics": [
         {
-            "type_uri" : "org.deepamehta.subscription_type",
-            "uri": "org.deepamehta.in_app_subscription",
+            "typeUri" : "dmx.subscription_type",
+            "uri": "dmx.in_app_subscription",
             "value": "In-App"
         },
         {
-            "type_uri" : "org.deepamehta.subscription_type",
-            "uri": "org.deepamehta.mail_subscription",
+            "typeUri" : "dmx.subscription_type",
+            "uri": "dmx.mail_subscription",
             "value": "Mail"
         }
     ]

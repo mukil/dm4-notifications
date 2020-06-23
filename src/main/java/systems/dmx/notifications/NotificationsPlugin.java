@@ -1,26 +1,6 @@
-package org.deepamehta.notifications;
+package systems.dmx.notifications;
 
-import de.deepamehta.core.DeepaMehtaObject;
-import de.deepamehta.core.RelatedTopic;
-import de.deepamehta.core.Topic;
-import de.deepamehta.core.osgi.PluginActivator;
-import de.deepamehta.core.service.Inject;
-import de.deepamehta.core.service.Transactional;
-import de.deepamehta.accesscontrol.AccessControlService;
-import de.deepamehta.core.Association;
-import de.deepamehta.core.DeepaMehtaType;
-import de.deepamehta.core.model.AssociationModel;
-import de.deepamehta.core.model.ChildTopicsModel;
-import de.deepamehta.core.model.TopicModel;
-import de.deepamehta.core.service.event.PostCreateAssociationListener;
-import de.deepamehta.core.service.event.PostCreateTopicListener;
-import de.deepamehta.core.service.event.PostDeleteTopicListener;
-import de.deepamehta.core.service.event.PostUpdateTopicListener;
-import de.deepamehta.core.util.DeepaMehtaUtils;
-import de.deepamehta.websockets.WebSocketConnection;
-import de.deepamehta.websockets.WebSocketsService;
-import de.deepamehta.websockets.event.WebsocketTextMessageListener;
-import de.deepamehta.workspaces.WorkspacesService;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -28,56 +8,66 @@ import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-import static org.deepamehta.notifications.NotificationsService.INVOLVED_ITEM_ID;
-import static org.deepamehta.notifications.NotificationsService.NOTIFICATION;
-import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_BODY;
-import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_RECIPIENT_EDGE;
-import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_SEEN;
-import static org.deepamehta.notifications.NotificationsService.NOTIFICATION_TITLE;
+import systems.dmx.accesscontrol.AccessControlService;
+import systems.dmx.core.Assoc;
+import static systems.dmx.core.Constants.COMPOSITION;
+import systems.dmx.core.DMXObject;
+import systems.dmx.core.DMXType;
+import systems.dmx.core.RelatedTopic;
+import systems.dmx.core.Topic;
+import systems.dmx.core.model.AssocModel;
+import systems.dmx.core.model.ChildTopicsModel;
+import systems.dmx.core.model.TopicModel;
+import systems.dmx.core.osgi.PluginActivator;
+import systems.dmx.core.service.Inject;
+import systems.dmx.core.service.Transactional;
+import systems.dmx.core.service.event.PostCreateAssoc;
+import systems.dmx.core.service.event.PostCreateTopic;
+import systems.dmx.core.service.event.PostDeleteTopic;
+import systems.dmx.core.service.event.PostUpdateTopic;
+import systems.dmx.core.util.DMXUtils;
+import static systems.dmx.notifications.NotificationsService.INVOLVED_ITEM_ID;
+import static systems.dmx.notifications.NotificationsService.NOTIFICATION;
+import static systems.dmx.notifications.NotificationsService.NOTIFICATION_BODY;
+import static systems.dmx.notifications.NotificationsService.NOTIFICATION_RECIPIENT_EDGE;
+import static systems.dmx.notifications.NotificationsService.NOTIFICATION_SEEN;
+import static systems.dmx.notifications.NotificationsService.NOTIFICATION_TITLE;
+import systems.dmx.workspaces.WorkspacesService;
 
 /**
  *
- * A DeepaMehta 4 Plugin introducing notifications on subscribed topics based on dm4-websockets.
+ * A DMX Plugin sending notifications to clients based on topic subscription_edges and dmx-websockets.
  *
  * @author Malte Reißig
- * @version 1.1
+ * @version 2.x
  *
  */
 
 @Path("/notifications")
 public class NotificationsPlugin extends PluginActivator implements NotificationsService,
-                                                                    WebsocketTextMessageListener,
-                                                                    PostUpdateTopicListener,
-                                                                    PostCreateTopicListener,
-                                                                    PostDeleteTopicListener,
-                                                                    PostCreateAssociationListener {
+                                                                    PostUpdateTopic,
+                                                                    PostCreateTopic,
+                                                                    PostDeleteTopic,
+                                                                    PostCreateAssoc {
 
     private static Logger log = Logger.getLogger(NotificationsPlugin.class.getName());
 
-    private static final String NOTIFICATON_BUNDLE_URI  = "org.deepamehta.notifications";
+    private static final String NOTIFICATON_BUNDLE_URI  = "systems.dmx.notifications";
 
-    private static final String WORKSPACE               = "dm4.workspaces.workspace";
-    private static final String TOPICMAP                = "dm4.topicmaps.topicmap";
-    private static final String TOPICMAP_MAPCONTEXT     = "dm4.topicmaps.topic_mapcontext";
-    private static final String PRIVATE_TOPICMAP        = "dm4.topicmaps.private";
-    private static final String NOTE                    = "dm4.notes.note";
-    private static final String NOTE_TEXT               = "dm4.notes.text";
-    private static final String USERNAME                = "dm4.accesscontrol.username";
-    private static final String TAG                     = "dm4.tags.tag";
+    private static final String TOPICMAP                = "dmx.topicmaps.topicmap";
+    private static final String TOPICMAP_MAPCONTEXT     = "dmx.topicmaps.topic_mapcontext";
+    private static final String PRIVATE_TOPICMAP        = "dmx.topicmaps.private";
+    private static final String NOTE                    = "dmx.notes.note";
+    private static final String NOTE_TEXT               = "dmx.notes.text";
+    private static final String USERNAME                = "dmx.accesscontrol.username";
+    private static final String TAG                     = "dmx.tags.tag";
 
-    private static final String AGGREGATION             = "dm4.core.aggregation";
-    private static final String AGGREGATION_DEF         = "dm4.core.aggregation_def";
-    private static final String COMPOSITION             = "dm4.core.composition";
-    private static final String COMPOSITION_DEF         = "dm4.core.composition_def";
-
-    private static final String DEFAULT_ROLE            = "dm4.core.default";
-    private static final String CHILD                   = "dm4.core.child";
-    private static final String PARENT                  = "dm4.core.parent";
+    private static final String DEFAULT_ROLE            = "dmx.core.default";
+    private static final String CHILD                   = "dmx.core.child";
+    private static final String PARENT                  = "dmx.core.parent";
 
     @Inject
     private AccessControlService accesscontrol = null;
-    @Inject
-    private WebSocketsService websocket = null;
     @Inject
     private WorkspacesService workspaces = null;
     /** @Inject
@@ -112,7 +102,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (isAuthenticatedUser()) {
             Topic account = accesscontrol.getUsernameTopic();
             log.fine("Listing subscriptions for user \"" + account.getSimpleValue() + "\"");
-            return account.getRelatedTopics(SUBSCRIPTION_EDGE);
+            return account.getRelatedTopics(SUBSCRIPTION_EDGE, null, null, null);
         }
         return null;
     }
@@ -149,8 +139,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                 log.warning("Nobody logged in for whom we could set the notification as seen.");
                 return Response.ok(false).build();
             }
-            Topic notification = dm4.getTopic(newsId).loadChildTopics();
-            notification.getChildTopics().set(NOTIFICATION_SEEN, true);
+            Topic notification = dmx.getTopic(newsId).loadChildTopics();
+            notification.update(notification.getChildTopics().getModel().set(NOTIFICATION_SEEN, true));
             log.fine("Set notification " + newsId + " SEEN");
             return Response.ok(true).build();
         } catch (Exception e) {
@@ -183,11 +173,11 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         try {
             // 2) Create an "In App" subscription (if not already existent)
             if (!associationExists(SUBSCRIPTION_EDGE, itemId, accountId)) {
-                AssociationModel model = mf.newAssociationModel(SUBSCRIPTION_EDGE,
-                    mf.newTopicRoleModel(accountId, DEFAULT_ROLE),
-                    mf.newTopicRoleModel(itemId, DEFAULT_ROLE),
+                AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
+                    mf.newTopicPlayerModel(accountId, DEFAULT_ROLE),
+                    mf.newTopicPlayerModel(itemId, DEFAULT_ROLE),
                     mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
-                dm4.createAssociation(model);
+                dmx.createAssoc(model);
                 log.info("New subscription for user:" + accountId + " to item:" + itemId);
             } else {
                 log.info("Subscription already exists between " + accountId + " and " + itemId);
@@ -201,17 +191,17 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Transactional
     private void unsubscribe(long accountId, long itemId) {
-        List<Association> assocs = dm4.getAssociations(accountId, itemId, SUBSCRIPTION_EDGE);
-        Iterator<Association> iterator = assocs.iterator();
+        List<Assoc> assocs = dmx.getAssocs(accountId, itemId, SUBSCRIPTION_EDGE);
+        Iterator<Assoc> iterator = assocs.iterator();
         while (iterator.hasNext()) {
-            Association assoc = iterator.next();
-            dm4.deleteAssociation(assoc.getId());
+            Assoc assoc = iterator.next();
+            dmx.deleteAssoc(assoc.getId());
         }
     }
 
     @Override
     @Transactional
-    public void notifySubscribers(String title, String message, long actingUsername, DeepaMehtaObject involvedItem) {
+    public void notifySubscribers(String title, String message, long actingUsername, DMXObject involvedItem) {
         // 1) create notifications for all direct subscribers of this user topic
         log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
                 + "\" (" + involvedItem.getType().getSimpleValue() + ")");
@@ -232,7 +222,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             }
         }
         // 3) Notifiy plugin developers to reload notifications for users
-        websocket.broadcast(NOTIFICATON_BUNDLE_URI, "Please reload notifications area for the user.");
+        dmx.getWebSocketsService().messageToAll(NOTIFICATON_BUNDLE_URI, "Please reload notifications area for the user.");
     }
 
     @Override
@@ -245,7 +235,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
                 DEFAULT_ROLE, DEFAULT_ROLE, NOTIFICATION);
         log.fine("Fetching " +results.size()+ " notifications for user " + account.getSimpleValue());
-        DeepaMehtaUtils.loadChildTopics(results);
+        DMXUtils.loadChildTopics(results);
         return results;
     }
 
@@ -269,18 +259,13 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         return unseen;
     }
 
-    @Override
-    public void websocketTextMessage(String string, WebSocketConnection wsc) {
-        log.info("### Received Websocket Text Message: " + string);
-    }
-
     // ------------------------------------------------------------------------------------------- Listening to Hooks
 
     @Override
     public void postCreateTopic(Topic topic) {
         if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
             if (topic.getTypeUri().equals(TOPICMAP)) {
-                long workspaceId = dm4.getAccessControl().getAssignedWorkspaceId(topic.getId());
+                long workspaceId = dmx.getPrivilegedAccess().getAssignedWorkspaceId(topic.getId());
                 notifyWorkspaceSubscribersAboutNewTopicmap(topic, workspaceId);
             } else if (topic.getTypeUri().equals(NOTE)) {
                 log.info("Created Note " + topic.getSimpleValue());
@@ -302,7 +287,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     @Override
-    public void postCreateAssociation(Association association) {
+    public void postCreateAssoc(Assoc association) {
         if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
             if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
                 notifyTopicmapSubscribersAboutNewTopicInMap(association);
@@ -314,11 +299,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     private void notifyTopicSubscribersAboutChangeset(Topic childValueTopicEdited, TopicModel tm1, TopicModel tm2) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
-        List parentAssocTypesUris = new ArrayList();
-        parentAssocTypesUris.add(AGGREGATION);
-        parentAssocTypesUris.add(COMPOSITION);
-        List<RelatedTopic> parentTopics = childValueTopicEdited.getRelatedTopics(parentAssocTypesUris,
-                CHILD, PARENT, null);
+        List<RelatedTopic> parentTopics = childValueTopicEdited.getRelatedTopics(COMPOSITION, CHILD, PARENT, null);
         // The following limitation is SAFE as long (see Line 282) as we just support subscriptions on "Note" topics
         // TODO: Potentially many topic which subscribers should be notified. Skipping support for this, taking any.
         if (parentTopics.size() > 0) {
@@ -340,7 +321,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             boolean isPrivate = topic.getChildTopics().getBoolean(PRIVATE_TOPICMAP);
             try {
                 if (!isPrivate) {
-                    Topic workspace = dm4.getTopic(workspaceId);
+                    Topic workspace = dmx.getTopic(workspaceId);
                     log.fine("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
                             + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
                     notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
@@ -355,22 +336,22 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
-    private void notifyTopicmapSubscribersAboutNewTopicInMap(Association association) {
+    private void notifyTopicmapSubscribersAboutNewTopicInMap(Assoc association) {
         Topic actingUser = accesscontrol.getUsernameTopic();
-        DeepaMehtaObject topic = null;
-        DeepaMehtaObject topicmap = null;
-        if (association.getPlayer1().getTypeUri().equals(TOPICMAP)) {
-            topic = association.getPlayer2();
-            topicmap = association.getPlayer1();
+        DMXObject topic = null;
+        DMXObject topicmap = null;
+        if (association.getDMXObject1().getTypeUri().equals(TOPICMAP)) {
+            topic = association.getDMXObject2();
+            topicmap = association.getDMXObject1();
             log.fine("Added Topic of type \""+ topic.getTypeUri()
                     + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
         } else {
-            topic = association.getPlayer1();
-            topicmap = association.getPlayer2();
+            topic = association.getDMXObject1();
+            topicmap = association.getDMXObject2();
             log.fine("Added Topic of type \"" + topic.getTypeUri()
                     + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
         }
-        DeepaMehtaType type = topic.getType();
+        DMXType type = topic.getType();
         if (!topic.getTypeUri().equals(NOTIFICATION)) {
             notifySubscribers(type.getSimpleValue() + " added to Topicmap \"" + topicmap.getSimpleValue() + "\"",
                 "An entry on " + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
@@ -384,7 +365,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     private void createNotifications(String title, String text, long actingUsername,
-            DeepaMehtaObject involvedItem) {
+            DMXObject involvedItem) {
         createNotifications(title, text, actingUsername, involvedItem, null);
     }
 
@@ -398,7 +379,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
      * @param subscribedItem
      */
     private void createNotifications(String title, String text, long actingUsername,
-            DeepaMehtaObject involvedItem, DeepaMehtaObject subscribedItem) {
+            DMXObject involvedItem, DMXObject subscribedItem) {
         // 0) Fetch all subscribers of item X
         List<RelatedTopic> subscribers = null;
         // 1) Handle indirect subscriptions (where subscribedItem != involvedItem)
@@ -421,7 +402,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     /** private void sendMailNotification(final Topic subscriber, final String title, final String text,
-            final long actingUsername, final DeepaMehtaObject involvedItem, final DeepaMehtaObject subscribedItem) {
+            final long actingUsername, final DMXObject involvedItem, final DMXObject subscribedItem) {
         log.info("Sending mail notificatino vai sendgrid to \"" + subscriber.getSimpleValue() + "\"");
         sendgrid.doEmailUser(subscriber.getSimpleValue().toString(), title, text);
     } **/
@@ -437,43 +418,43 @@ public class NotificationsPlugin extends PluginActivator implements Notification
      * @param subscribedItem
      */
     private void createNotificationTopic(final Topic subscriber, final String title, final String text,
-            final long actingUsername, final DeepaMehtaObject involvedItem, final DeepaMehtaObject subscribedItem) {
+            final long actingUsername, final DMXObject involvedItem, final DMXObject subscribedItem) {
         try {
-            dm4.getAccessControl().runWithoutWorkspaceAssignment(new Callable<Topic>() {
+            dmx.getPrivilegedAccess().runWithoutWorkspaceAssignment(new Callable<Topic>() {
                 @Override
                 public Topic call() {
                     // 1) Create instance of notification
                     ChildTopicsModel message = mf.newChildTopicsModel()
-                            .put(NOTIFICATION_SEEN, false)
-                            .put(NOTIFICATION_TITLE, title)
-                            .put(NOTIFICATION_BODY, text)
-                            .putRef(USERNAME, actingUsername)
-                            .put(INVOLVED_ITEM_ID, involvedItem.getId());
-                    if (subscribedItem != null) message.put(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
+                            .set(NOTIFICATION_SEEN, false)
+                            .set(NOTIFICATION_TITLE, title)
+                            .set(NOTIFICATION_BODY, text)
+                            .setRef(USERNAME, actingUsername)
+                            .set(INVOLVED_ITEM_ID, involvedItem.getId());
+                    if (subscribedItem != null) message.set(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
                     TopicModel model = mf.newTopicModel(NOTIFICATION, message);
-                    Topic notification = dm4.createTopic(model);
-                    Topic privateWorkspace = dm4.getAccessControl()
+                    Topic notification = dmx.createTopic(model);
+                    Topic privateWorkspace = dmx.getPrivilegedAccess()
                             .getPrivateWorkspace(subscriber.getSimpleValue().toString());
-                    dm4.getAccessControl().assignToWorkspace(notification, privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                    dmx.getPrivilegedAccess().assignToWorkspace(notification, privateWorkspace.getId());
+                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
                             .getTopic(NOTIFICATION_TITLE), privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
                             .getTopic(NOTIFICATION_BODY), privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
                             .getTopic(NOTIFICATION_SEEN), privateWorkspace.getId());
-                    dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
                             .getTopic(INVOLVED_ITEM_ID), privateWorkspace.getId());
                     if (subscribedItem != null) {
-                        dm4.getAccessControl().assignToWorkspace(notification.getChildTopics()
+                        dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
                                 .getTopic(SUBSCRIBED_ITEM_ID), privateWorkspace.getId());
                     }
                     // Improvement: Try using topicmaps.setViewProperties()... (not having a topicmap) to colorize..
                     // 2) Hook up notification with subscriber
-                    AssociationModel recipientModel = mf.newAssociationModel(NOTIFICATION_RECIPIENT_EDGE,
-                            model.createRoleModel(DEFAULT_ROLE),
-                            mf.newTopicRoleModel(subscriber.getId(), DEFAULT_ROLE));
-                    Association recipient = dm4.createAssociation(recipientModel);
-                    dm4.getAccessControl().assignToWorkspace(recipient, privateWorkspace.getId());
+                    AssocModel recipientModel = mf.newAssocModel(NOTIFICATION_RECIPIENT_EDGE,
+                            model.createPlayerModel(DEFAULT_ROLE),
+                            mf.newTopicPlayerModel(subscriber.getId(), DEFAULT_ROLE));
+                    Assoc recipient = dmx.createAssoc(recipientModel);
+                    dmx.getPrivilegedAccess().assignToWorkspace(recipient, privateWorkspace.getId());
                     return notification;
                 }
             });
@@ -483,7 +464,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     private boolean associationExists(String edge_type, long itemId, long accountId) {
-        List<Association> results = dm4.getAssociations(itemId, accountId, edge_type);
+        List<Assoc> results = dmx.getAssocs(itemId, accountId, edge_type);
         return (results.size() > 0);
     }
 
