@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import systems.dmx.accesscontrol.AccessControlService;
+import static systems.dmx.accesscontrol.Constants.USERNAME;
 import systems.dmx.core.Assoc;
 import static systems.dmx.core.Constants.*;
 import systems.dmx.core.DMXObject;
@@ -32,6 +33,7 @@ import static systems.dmx.notifications.NotificationsService.NOTIFICATION_BODY;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_RECIPIENT_EDGE;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_SEEN;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_TITLE;
+import static systems.dmx.topicmaps.Constants.TOPICMAP;
 import systems.dmx.workspaces.WorkspacesService;
 
 /**
@@ -54,11 +56,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     private static final String NOTIFICATON_BUNDLE_URI  = "systems.dmx.notifications";
 
-    private static final String TOPICMAP                = "dmx.topicmaps.topicmap";
     private static final String TOPICMAP_MAPCONTEXT     = "dmx.topicmaps.topic_mapcontext";
     private static final String NOTE                    = "dmx.notes.note";
     private static final String NOTE_TEXT               = "dmx.notes.text";
-    private static final String USERNAME                = "dmx.accesscontrol.username";
     private static final String TAG                     = "dmx.tags.tag";
 
     @Inject
@@ -216,8 +216,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                 createNotifications(title, message, actingUsername, involvedItem, tag);
             }
         }
-        // 3) Notifiy plugin developers to reload notifications for users
-        dmx.getWebSocketsService().messageToAll(NOTIFICATON_BUNDLE_URI, "Please reload notifications area for the user.");
+        // 3) Send a generic "ping" to client developers (push-to-pull) requesting a reload notifications for users
+        dmx.getWebSocketService().sendToAll("Please reload notifications area for the user."); // NOTIFICATON_BUNDLE_URI
     }
 
     @Override
