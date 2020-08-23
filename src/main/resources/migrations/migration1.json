@@ -100,7 +100,7 @@
                     "typeUri": "dmx.webclient.view_config",
                     "children": {
                         "dmx.webclient.add_to_create_menu": false,
-                        "dmx.webclient.icon": "/dmx.notifications/images/ball-light-green.png"
+                        "dmx.webclient.icon": "\uf0a2"
                     }
                 }
             ]
@@ -147,7 +147,7 @@
                 {
                     "typeUri": "dmx.webclient.view_config",
                     "children": {
-                        "dmx.webclient.color": "#F38A69"
+                        "dmx.webclient.color": "#F9D6D3"
                     }
                 }
             ]

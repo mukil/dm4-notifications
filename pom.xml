@@ -32,6 +32,11 @@
             <artifactId>dmx-accesscontrol</artifactId>
             <version>5.0</version>
         </dependency>
+        <dependency>
+            <groupId>systems.dmx</groupId>
+            <artifactId>dmx-topicmaps</artifactId>
+            <version>5.0</version>
+        </dependency>
     </dependencies>
 
     <build>

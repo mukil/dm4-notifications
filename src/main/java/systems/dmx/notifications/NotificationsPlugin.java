@@ -34,6 +34,8 @@ import static systems.dmx.notifications.NotificationsService.NOTIFICATION_RECIPI
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_SEEN;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_TITLE;
 import static systems.dmx.topicmaps.Constants.TOPICMAP;
+import static systems.dmx.topicmaps.Constants.TOPICMAP_CONTEXT;
+import static systems.dmx.topicmaps.Constants.TOPICMAP_NAME;
 import systems.dmx.workspaces.WorkspacesService;
 
 /**
@@ -56,7 +58,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     private static final String NOTIFICATON_BUNDLE_URI  = "systems.dmx.notifications";
 
-    private static final String TOPICMAP_MAPCONTEXT     = "dmx.topicmaps.topic_mapcontext";
     private static final String NOTE                    = "dmx.notes.note";
     private static final String NOTE_TEXT               = "dmx.notes.text";
     private static final String TAG                     = "dmx.tags.tag";
@@ -69,7 +70,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     private SendgridService sendgrid = null; **/
 
 
-    @GET
+    @POST
     @Path("/subscribe/{itemId}")
     @Transactional
     public Response subscribeUser(@PathParam("itemId") long itemId) {
@@ -80,7 +81,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         return Response.noContent().build();
     }
 
-    @GET
+    @POST
     @Path("/unsubscribe/{itemId}")
     @Transactional
     public Response unsubscribeUser(@PathParam("itemId") long itemId) {
@@ -227,8 +228,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
         Topic account = accesscontrol.getUsernameTopic();
         //
-        List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
-                DEFAULT, DEFAULT, NOTIFICATION);
+        List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE, DEFAULT, DEFAULT, NOTIFICATION);
         log.fine("Fetching " +results.size()+ " notifications for user " + account.getSimpleValue());
         DMXUtils.loadChildTopics(results);
         return results;
@@ -242,8 +242,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         Topic account = accesscontrol.getUsernameTopic();
         //
         ArrayList<RelatedTopic> unseen = new ArrayList<RelatedTopic>();
-        List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE,
-                DEFAULT, DEFAULT, NOTIFICATION);
+        List<RelatedTopic> results = account.getRelatedTopics(NOTIFICATION_RECIPIENT_EDGE, DEFAULT, DEFAULT, NOTIFICATION);
         for (RelatedTopic notification : results) {
             boolean seen_child = notification.getChildTopics().getBoolean(NOTIFICATION_SEEN);
             if (!seen_child) {
@@ -284,7 +283,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public void postCreateAssoc(Assoc association) {
         if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
-            if (association.getTypeUri().equals(TOPICMAP_MAPCONTEXT)) {
+            if (association.getTypeUri().equals(TOPICMAP_CONTEXT)) {
+                log.info("Topicmap Mapcontext assoc created... " + association.getModel().toJSON());
                 notifyTopicmapSubscribersAboutNewTopicInMap(association);
             }
         }
@@ -310,13 +310,19 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
-    private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topic, long workspaceId) {
+    private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topicmap, long workspaceId) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
-        if (topic.getTypeUri().equals(TOPICMAP)) {
+        if (topicmap.getTypeUri().equals(TOPICMAP)) {
             Topic workspace = dmx.getTopic(workspaceId);
+            topicmap.loadChildTopics();
+            log.info("Topicmap in creation " + topicmap.toJSON().toString());
+            // no "Topicmap Name" available here yet (simpleValue is empty, children not associated)
             log.fine("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
                     + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
-            notifySubscribers("Topicmap \"" + topic.getSimpleValue() + "\" created in Workspace \""
+            Topic map2 = dmx.getTopic(topicmap.getId());
+            log.info("Topicmap in storage " + map2.toJSON().toString());
+            // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
+            notifySubscribers("Topicmap \"" + topicmap.getSimpleValue() + "\" created in Workspace \""
                     + workspace.getSimpleValue() +"\"", "A new topicmap was created by \""
                     + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
                     actingUsername.getId(), workspace);
