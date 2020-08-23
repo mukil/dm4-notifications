@@ -27,15 +27,18 @@ import systems.dmx.core.service.event.PostCreateTopic;
 import systems.dmx.core.service.event.PostDeleteTopic;
 import systems.dmx.core.service.event.PostUpdateTopic;
 import systems.dmx.core.util.DMXUtils;
+import static systems.dmx.events.Constants.EVENT;
+import static systems.dmx.notes.Constants.NOTE;
+import static systems.dmx.notes.Constants.NOTE_TEXT;
 import static systems.dmx.notifications.NotificationsService.INVOLVED_ITEM_ID;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_BODY;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_RECIPIENT_EDGE;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_SEEN;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_TITLE;
+import static systems.dmx.tags.Constants.TAG;
 import static systems.dmx.topicmaps.Constants.TOPICMAP;
 import static systems.dmx.topicmaps.Constants.TOPICMAP_CONTEXT;
-import static systems.dmx.topicmaps.Constants.TOPICMAP_NAME;
 import systems.dmx.workspaces.WorkspacesService;
 
 /**
@@ -51,25 +54,57 @@ import systems.dmx.workspaces.WorkspacesService;
 public class NotificationsPlugin extends PluginActivator implements NotificationsService,
                                                                     PostUpdateTopic,
                                                                     PostCreateTopic,
-                                                                    PostDeleteTopic,
                                                                     PostCreateAssoc {
 
     private static Logger log = Logger.getLogger(NotificationsPlugin.class.getName());
 
     private static final String NOTIFICATON_BUNDLE_URI  = "systems.dmx.notifications";
 
-    private static final String NOTE                    = "dmx.notes.note";
-    private static final String NOTE_TEXT               = "dmx.notes.text";
-    private static final String TAG                     = "dmx.tags.tag";
-
     @Inject
     private AccessControlService accesscontrol = null;
     @Inject
     private WorkspacesService workspaces = null;
-    /** @Inject
-    private SendgridService sendgrid = null; **/
 
 
+
+    // --------------------------------------------------------------------------------------- DMX Event Listeners
+
+    @Override
+    public void postCreateTopic(Topic topic) {
+        if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
+            if (topic.getTypeUri().equals(TOPICMAP)) {
+                long workspaceId = dmx.getPrivilegedAccess().getAssignedWorkspaceId(topic.getId());
+                notifyWorkspaceSubscribersAboutNewTopicmap(topic, workspaceId);
+            } else if (topic.getTypeUri().equals(EVENT)) {
+                long workspaceId = dmx.getPrivilegedAccess().getAssignedWorkspaceId(topic.getId());
+                notifyWorkspaceSubscribersAboutNewEvent(topic, workspaceId);
+            } else if (topic.getTypeUri().equals(NOTE)) {
+                log.info("Created Note " + topic.getSimpleValue());
+            }
+        }
+    }
+
+    @Override
+    public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
+        if (topic.getTypeUri().equals(NOTE_TEXT)) {
+            log.info("Note updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
+            notifyTopicSubscribersAboutChangeset(topic, tm, tm1);
+        }
+    }
+
+    @Override
+    public void postCreateAssoc(Assoc association) {
+        if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
+            if (association.getTypeUri().equals(TOPICMAP_CONTEXT)) {
+                notifyTopicmapSubscribersAboutNewTopicInMap(association);
+            }
+        }
+    }
+
+
+
+    // --------------------------------------------------------------------------------------- Web Service Resources
+    
     @POST
     @Path("/subscribe/{itemId}")
     @Transactional
@@ -146,6 +181,10 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
+
+
+    // --------------------------------------------------------------------------- Notifications Service Implementation
+
     @Override
     public void subscribeInApp(long itemId) {
         if (!isAuthenticatedUser()) {
@@ -162,37 +201,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
         Topic account = accesscontrol.getUsernameTopic();
         unsubscribe(account.getId(), itemId);
-    }
-
-    @Transactional
-    private void subscribeInApp(long accountId, long itemId) {
-        try {
-            // 2) Create an "In App" subscription (if not already existent)
-            if (!associationExists(SUBSCRIPTION_EDGE, itemId, accountId)) {
-                AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
-                    mf.newTopicPlayerModel(accountId, DEFAULT),
-                    mf.newTopicPlayerModel(itemId, DEFAULT),
-                    mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
-                dmx.createAssoc(model);
-                log.info("New subscription for user:" + accountId + " to item:" + itemId);
-            } else {
-                log.info("Subscription already exists between " + accountId + " and " + itemId);
-            }
-        } catch (Exception e) {
-            log.warning("ROLLBACK!");
-            log.warning("Subscription between " +accountId+ " and " +itemId+ " not created.");
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Transactional
-    private void unsubscribe(long accountId, long itemId) {
-        List<Assoc> assocs = dmx.getAssocs(accountId, itemId, SUBSCRIPTION_EDGE);
-        Iterator<Assoc> iterator = assocs.iterator();
-        while (iterator.hasNext()) {
-            Assoc assoc = iterator.next();
-            dmx.deleteAssoc(assoc.getId());
-        }
     }
 
     @Override
@@ -253,45 +261,41 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         return unseen;
     }
 
-    // ------------------------------------------------------------------------------------------- Listening to Hooks
 
-    @Override
-    public void postCreateTopic(Topic topic) {
-        if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
-            if (topic.getTypeUri().equals(TOPICMAP)) {
-                long workspaceId = dmx.getPrivilegedAccess().getAssignedWorkspaceId(topic.getId());
-                notifyWorkspaceSubscribersAboutNewTopicmap(topic, workspaceId);
-            } else if (topic.getTypeUri().equals(NOTE)) {
-                log.info("Created Note " + topic.getSimpleValue());
-            }
-        }
-    }
-
-    @Override
-    public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
-        if (topic.getTypeUri().equals(NOTE_TEXT)) {
-            log.info("Note updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
-            notifyTopicSubscribersAboutChangeset(topic, tm, tm1);
-        }
-    }
-
-    @Override
-    public void postDeleteTopic(TopicModel tm) {
-        // log.info("Deleted Topic " + tm);
-    }
-
-    @Override
-    public void postCreateAssoc(Assoc association) {
-        if (isAuthenticatedUser()) { // Prevents notifications created by Migrations or other Mechanics
-            if (association.getTypeUri().equals(TOPICMAP_CONTEXT)) {
-                log.info("Topicmap Mapcontext assoc created... " + association.getModel().toJSON());
-                notifyTopicmapSubscribersAboutNewTopicInMap(association);
-            }
-        }
-    }
 
     // ---------------------------------------------------------------------------------------------- Private Methods
 
+    @Transactional
+    private void subscribeInApp(long accountId, long itemId) {
+        try {
+            // 2) Create an "In App" subscription (if not already existent)
+            if (!associationExists(SUBSCRIPTION_EDGE, itemId, accountId)) {
+                AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
+                    mf.newTopicPlayerModel(accountId, DEFAULT),
+                    mf.newTopicPlayerModel(itemId, DEFAULT),
+                    mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
+                dmx.createAssoc(model);
+                log.info("New subscription for user:" + accountId + " to item:" + itemId);
+            } else {
+                log.info("Subscription already exists between " + accountId + " and " + itemId);
+            }
+        } catch (Exception e) {
+            log.warning("ROLLBACK!");
+            log.warning("Subscription between " +accountId+ " and " +itemId+ " not created.");
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Transactional
+    private void unsubscribe(long accountId, long itemId) {
+        List<Assoc> assocs = dmx.getAssocs(accountId, itemId, SUBSCRIPTION_EDGE);
+        Iterator<Assoc> iterator = assocs.iterator();
+        while (iterator.hasNext()) {
+            Assoc assoc = iterator.next();
+            dmx.deleteAssoc(assoc.getId());
+        }
+    }
+    
     private void notifyTopicSubscribersAboutChangeset(Topic childValueTopicEdited, TopicModel tm1, TopicModel tm2) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
         List<RelatedTopic> parentTopics = childValueTopicEdited.getRelatedTopics(COMPOSITION, CHILD, PARENT, null);
@@ -310,17 +314,36 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
+    private void notifyWorkspaceSubscribersAboutNewEvent(Topic event, long workspaceId) {
+        Topic actingUsername = accesscontrol.getUsernameTopic();
+        if (event.getTypeUri().equals(EVENT) && workspaceId != -1) {
+            // workspace may be "-1" if someone just created it, and therewith implicitly an "untitled" topicmap gets created
+            // which brings us here, if the workspace in which the new workspace is created is watched by someone...
+            Topic workspace = dmx.getTopic(workspaceId);
+            log.info("Event created " + event.toJSON().toString());
+            log.info("Notifying subscribers about new event created by \"" + actingUsername.getSimpleValue()
+                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
+            // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
+            notifySubscribers("Event \"" + event.getSimpleValue() + "\" created in Workspace \""
+                    + workspace.getSimpleValue() +"\"", "A new event was created by \""
+                    + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
+                    actingUsername.getId(), workspace);
+        }
+    }
+
     private void notifyWorkspaceSubscribersAboutNewTopicmap(Topic topicmap, long workspaceId) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
-        if (topicmap.getTypeUri().equals(TOPICMAP)) {
+        if (topicmap.getTypeUri().equals(TOPICMAP) && workspaceId != -1) {
+            // workspace may be "-1" if someone just created it, and therewith implicitly an "untitled" topicmap gets created
+            // which brings us here, if the workspace in which the new workspace is created is watched by someone...
             Topic workspace = dmx.getTopic(workspaceId);
+            // Fixme: no "Topicmap Name" available here yet (simpleValue is empty, children not associated)
             topicmap.loadChildTopics();
             log.info("Topicmap in creation " + topicmap.toJSON().toString());
-            // no "Topicmap Name" available here yet (simpleValue is empty, children not associated)
-            log.fine("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
-                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             Topic map2 = dmx.getTopic(topicmap.getId());
             log.info("Topicmap in storage " + map2.toJSON().toString());
+            log.info("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
+                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
             notifySubscribers("Topicmap \"" + topicmap.getSimpleValue() + "\" created in Workspace \""
                     + workspace.getSimpleValue() +"\"", "A new topicmap was created by \""
