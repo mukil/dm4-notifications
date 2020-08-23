@@ -1,5 +1,5 @@
 
-# DeepaMehta 4 Notifications
+# DMX Notifications
 
 The DeepaMehta 4 Notifications plugin makes it easy for developers to create persistent notifications across sessions and screens. It furthermore takes care that the notifications end up in the recipients _Private Workspace_.
 
@@ -39,28 +39,26 @@ Your _Notifications_ are accessible and readable to you only (unless you share t
 
 ## Requirements
 
-DeepaMehta 4 is a platform for collaboration and knowledge management.
+DMX is a platform for collaboration and knowledge management.
 https://github.com/jri/deepamehta
-
-To be able to install this module you first and additionally have to install the following DeepaMehta 4 Plugins.
-
-* `dm48-websockets-0.4`-Bundle - [Source Code](https://github.com/jri/dm4-websockets), [Nightly Build](http://download.deepamehta.de/nightly/)
 
 ## Download & Installation
 
-You can download the latest stable `dm48-notifications`-Bundle [here](http://download.deepamehta.de/).
-
-After downloading the bundle-files, place both plugins (dm4-websockets & dm4-notifications) in the `bundles-deploy` folder of your DeepaMehta 4 installation.
+You can download the latest `dmx-notifications`-Bundle [here](http://download.dmx.systems/).
 
 ## Application Model
 
 ![Screenshot of Notification Model in DM, Selected TopicType Notification](/notification_model_doc.png)
 
-## GNU Public License
+## GNU AGPL Public License
 
-This sofware is released under the terms of the GNU General Public License in Version 3.0, 2007.
+This sofware is released under the terms of the GNU Affero General Public License v3.0.
 
 ## Version History
+
+**2.0**, UPCOMING
+
+* Data model and backend compatible with DMX 5.0
 
 **1.2**, Aug 11, 2017
 
