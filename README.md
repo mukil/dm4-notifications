@@ -25,13 +25,13 @@ For the mentioned subscriptions the following actions will notify subscribers:
 *   Workspace: Whenever a new *Topicmap*, *Note* or *Event* is created in the workspace
 *   Topicmap: Whenever another user with write permission `adds a topic` to it
 *   Note: Whenever another user with WRITE permissions `Edits` the contents of the note<br/>
-    (In this case, the notificiation includes the old and the new contents of the topic, [example](https://github.com/mukil/dm4-notifications/blob/master/docs/screen_c_notification_topics_75perc.png))
+    (In this case, the notificiation includes the old and the new contents of the topic, [example](https://github.com/mukil/dmx-notifications/blob/master/docs/screen_c_notification_topics_75perc.png))
 
 ### Accessing notifications (In-App) 
 
 When logged in you find your notifications related to your username. You can reveal your username in a topicmap using the Search/Create Dialog. Related to your username you will find all your _Notifications_. You can navigate to your notifications also using the *Related* tab after revealing your `Private Workspace`.
 
-![Accessing your notification in the Webclient](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_b_notification_topics_75perc.png)
+![Accessing your notification in the Webclient](https://github.com/mukil/dmx-notifications/raw/master/docs/screen_b_notification_topics_75perc.png)
 
 As of DMX there is no special display (yet) which delivers you your notifications in a more convenient way. Of course, you're very welcome to encourage us or help us to design or create one :)
 
@@ -46,9 +46,9 @@ https://github.com/jri/deepamehta
 
 You can download the latest `dmx-notifications`-Bundle [here](http://download.dmx.systems/).
 
-## Application Model
+## Notifications Model
 
-![Screenshot of Notification Model in DM, Selected TopicType Notification](/notification_model_doc.png)
+![Screenshot of Notification Model in DMX, Selected TopicType Notification](/notification_model_doc.png)
 
 ## GNU AGPL Public License
 
