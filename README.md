@@ -15,6 +15,13 @@ Actually the plugin provides:
     *    Manage subscriptions (subscribe/unsubscribe)
     *    Create notifications (persistent notifcations for all users who subscribed given item)
 
+
+## Notifications Model
+
+The following figure you find an overview of the type definitionst dmx-notifications installs in DMX. 
+
+![Screenshot of Notification Model in DMX, Selected TopicType Notification](/notification_model_doc.png)
+
 ## Usage: Subscribe items to receive notifications
 
 A subscription is created (using the DMX Webclient) through creating a `Notification Subscription` association between your `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
@@ -45,10 +52,6 @@ https://github.com/jri/deepamehta
 ## Download & Installation
 
 You can download the latest `dmx-notifications`-Bundle [here](http://download.dmx.systems/).
-
-## Notifications Model
-
-![Screenshot of Notification Model in DMX, Selected TopicType Notification](/notification_model_doc.png)
 
 ## GNU AGPL Public License
 
