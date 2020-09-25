@@ -1,7 +1,7 @@
 
 # DMX Notifications
 
-The DeepaMehta 4 Notifications plugin makes it easy for developers to create persistent notifications across sessions and screens. It furthermore takes care that the notifications end up in the recipients _Private Workspace_.
+The DMX Notifications plugin makes it easy for developers to create persistent notifications across sessions and screens. It furthermore takes care that the notifications end up in the recipients _Private Workspace_.
 
 The use case is:
 
@@ -9,7 +9,7 @@ A user subscribes a topic.
 The user is notified when the topic is changed.  
 
 Actually the plugin provides:
-*   A *Notification* model (a Topic Type for the _message_)
+*   A *Notification* model (a Topic Type representing a _message_)
 *   A *Subscription* model (an Association Type for the _configurations_)
 *   A service to
     *    Manage subscriptions (subscribe/unsubscribe)
@@ -17,29 +17,29 @@ Actually the plugin provides:
 
 ## Usage: Subscribe items to receive notifications
 
-A subscription is created (using DeepaMehta's Webclient) through using the `Subscribe` command on topics or drawing an association of type `Notification Subscription` between your `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
+A subscription is created (using the DMX Webclient) through creating a `Notification Subscription` association between your `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
 
-![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_a_notification_subscription_edge_860.png)
+![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dmx-notifications/raw/master/docs/notification_subscription_configuration.png)
 
 For the mentioned subscriptions the following actions will notify subscribers:
-*   Workspace: Whenever a `New Topicmap` (which is not `Private`) is created in it
+*   Workspace: Whenever a new *Topicmap*, *Note* or *Event* is created in the workspace
 *   Topicmap: Whenever another user with write permission `adds a topic` to it
-*   Note: Whenever another user with WRITE permissions `Edits` the notes content<br/>
+*   Note: Whenever another user with WRITE permissions `Edits` the contents of the note<br/>
     (In this case, the notificiation includes the old and the new contents of the topic, [example](https://github.com/mukil/dm4-notifications/blob/master/docs/screen_c_notification_topics_75perc.png))
 
 ### Accessing notifications (In-App) 
 
-When logged in you find your notifications related to your username (click it to reveal your User Account topic in the in the upper right corner of the DeepaMehta Webclient). Then, reveal the very first topic, the one which represents your actual _Username_. Related to this item you will find all _Notifications_.
+When logged in you find your notifications related to your username. You can reveal your username in a topicmap using the Search/Create Dialog. Related to your username you will find all your _Notifications_. You can navigate to your notifications also using the *Related* tab after revealing your `Private Workspace`.
 
 ![Accessing your notification in the Webclient](https://github.com/mukil/dm4-notifications/raw/master/docs/screen_b_notification_topics_75perc.png)
 
-Sorry for this inconvenience. Currently we have no special display which delivers you notifications in a more convenient way. But of course, you're very welcome to encourage us or help us to design or create one :)
+As of DMX there is no special display (yet) which delivers you your notifications in a more convenient way. Of course, you're very welcome to encourage us or help us to design or create one :)
 
-Your _Notifications_ are accessible and readable to you only (unless you share them). For that reason you can find your notifications also in the related section after  revealing your `Private Workspace`.
+Your _Notifications_ are accessible and readable to you only (unless you move them to another workspace). 
 
 ## Requirements
 
-DMX is a platform for collaboration and knowledge management.
+DMX 5.0 is a platform for collaboration and knowledge management.
 https://github.com/jri/deepamehta
 
 ## Download & Installation

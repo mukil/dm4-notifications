@@ -24,7 +24,6 @@ import systems.dmx.core.service.Inject;
 import systems.dmx.core.service.Transactional;
 import systems.dmx.core.service.event.PostCreateAssoc;
 import systems.dmx.core.service.event.PostCreateTopic;
-import systems.dmx.core.service.event.PostDeleteTopic;
 import systems.dmx.core.service.event.PostUpdateTopic;
 import systems.dmx.core.util.DMXUtils;
 import static systems.dmx.events.Constants.EVENT;
@@ -79,15 +78,17 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                 long workspaceId = dmx.getPrivilegedAccess().getAssignedWorkspaceId(topic.getId());
                 notifyWorkspaceSubscribersAboutNewEvent(topic, workspaceId);
             } else if (topic.getTypeUri().equals(NOTE)) {
-                log.info("Created Note " + topic.getSimpleValue());
+                long workspaceId = dmx.getPrivilegedAccess().getAssignedWorkspaceId(topic.getId());
+                notifyWorkspaceSubscribersAboutNewNote(topic, workspaceId);
             }
+            // Todo: Add notifications for User Accounts, Person, Organizations, Bookmarks creation
         }
     }
 
     @Override
     public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
         if (topic.getTypeUri().equals(NOTE_TEXT)) {
-            log.info("Note updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
+            // log.info("Note Text updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
             notifyTopicSubscribersAboutChangeset(topic, tm, tm1);
         }
     }
@@ -320,12 +321,27 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             // workspace may be "-1" if someone just created it, and therewith implicitly an "untitled" topicmap gets created
             // which brings us here, if the workspace in which the new workspace is created is watched by someone...
             Topic workspace = dmx.getTopic(workspaceId);
-            log.info("Event created " + event.toJSON().toString());
             log.info("Notifying subscribers about new event created by \"" + actingUsername.getSimpleValue()
                     + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
             notifySubscribers("Event \"" + event.getSimpleValue() + "\" created in Workspace \""
                     + workspace.getSimpleValue() +"\"", "A new event was created by \""
+                    + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
+                    actingUsername.getId(), workspace);
+        }
+    }
+
+    private void notifyWorkspaceSubscribersAboutNewNote(Topic note, long workspaceId) {
+        Topic actingUsername = accesscontrol.getUsernameTopic();
+        if (note.getTypeUri().equals(NOTE) && workspaceId != -1) {
+            // workspace may be "-1" if someone just created it, and therewith implicitly an "untitled" topicmap gets created
+            // which brings us here, if the workspace in which the new workspace is created is watched by someone...
+            Topic workspace = dmx.getTopic(workspaceId);
+            log.info("Notifying subscribers about new note created by \"" + actingUsername.getSimpleValue()
+                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
+            // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
+            notifySubscribers("Note \"" + note.getSimpleValue() + "\" created in Workspace \""
+                    + workspace.getSimpleValue() +"\"", "A new note was created by \""
                     + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
                     actingUsername.getId(), workspace);
         }
