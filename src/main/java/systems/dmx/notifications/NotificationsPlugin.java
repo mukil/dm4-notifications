@@ -5,9 +5,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import systems.dmx.accesscontrol.AccessControlService;
 import static systems.dmx.accesscontrol.Constants.USERNAME;
 import systems.dmx.core.Assoc;
@@ -102,7 +105,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
-
+    // Dev-Meeting:
+    // - Notes, Optional Dependencies for Plugins via OSGi Standard Mechanisms
 
     // --------------------------------------------------------------------------------------- Web Service Resources
     
@@ -206,11 +210,11 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     @Transactional
-    public void notifySubscribers(String title, String message, long actingUsername, DMXObject involvedItem) {
+    public void notifySubscribers(String title, String body, long actingUsername, DMXObject involvedItem) {
         // 1) create notifications for all direct subscribers of this user topic
         log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
                 + "\" (" + involvedItem.getType().getSimpleValue() + ")");
-        createNotifications(title, message, actingUsername, involvedItem);
+        createNotifications(title, body, actingUsername, involvedItem);
         // 2) If involvedItem is tagged, create also notifications for all subscribers of these tag topics
         List<RelatedTopic> tags = null; // Defensive access check for tags on this topic type (for indirect subscriptions)
         try {
@@ -223,11 +227,20 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             for (RelatedTopic tag : tags) {
                 log.info("Notifying subscribers of tag \"" + tag.getSimpleValue() + "\"");
                 // 2.2) for all subscribers of this tag
-                createNotifications(title, message, actingUsername, involvedItem, tag);
+                createNotifications(title, body, actingUsername, involvedItem, tag);
             }
         }
         // 3) Send a generic "ping" to client developers (push-to-pull) requesting a reload notifications for users
-        dmx.getWebSocketService().sendToAll("Please reload notifications area for the user."); // NOTIFICATON_BUNDLE_URI
+        Topic username = dmx.getTopic(actingUsername);
+        JSONObject message = new JSONObject();
+        try {
+            message = new JSONObject()
+                    .put("type", "loadUnseenNotifications")
+                    .put("args", new JSONObject().put("username", username.getSimpleValue()) );
+        } catch (JSONException ex) {
+            Logger.getLogger(NotificationsPlugin.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        dmx.getWebSocketService().sendToAllButOrigin(message.toString());
     }
 
     @Override
@@ -255,6 +268,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         for (RelatedTopic notification : results) {
             boolean seen_child = notification.getChildTopics().getBoolean(NOTIFICATION_SEEN);
             if (!seen_child) {
+                notification.loadChildTopics();
                 unseen.add(notification);
             }
         }
