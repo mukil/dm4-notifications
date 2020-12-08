@@ -10,6 +10,13 @@ export default ({dm5, store, axios: http, Vue}) => ({
     module: require('./notifications-store').default
   },
 
+  components: [
+    {
+      comp: require('./components/notifications-menu').default,
+      mount: 'toolbar-right'
+    }
+  ],
+
   contextCommands: {
     topic: topic => {
       let isLoggedIn = (store.state.accesscontrol.username)
