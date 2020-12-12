@@ -260,8 +260,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     public ArrayList<RelatedTopic> getUnseenNotifications() {
         ArrayList<RelatedTopic> unseen = new ArrayList<RelatedTopic>();
         if (!isAuthenticatedUser()) {
-            log.warning("For users to read their notifications they must be authenticated.");
-            return unseen;
+            // throw new RuntimeException("For users to load notifications they must be authenticated.");
+            return new ArrayList<>();
         }
         Topic account = accesscontrol.getUsernameTopic();
         //

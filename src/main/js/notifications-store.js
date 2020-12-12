@@ -13,6 +13,16 @@ export default ({dm5, Vue, axios:http}) => ({
         console.log("[Notifications] Loaded",response.data,"Notifications")
       })
     },
+    /** showUnseenNotifications({state}, args) {
+      console.log("[Notifications] Show ", state.notifications.length, "unseen notifications")
+      for (var n in state.notifications) {
+        let notification = state.notifications[n]
+        Vue.$notify({
+          type: "success",
+          message: notification.value
+        })
+      }
+    }, */
     markNotificationAsSeen(topicId) {
       // TBD.
       console.log("[Notifications] Mark notification seen", topicId)

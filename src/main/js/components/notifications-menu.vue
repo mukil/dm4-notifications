@@ -63,7 +63,4 @@ export default {
 .dm5-notifications {
     position: relative;
     top: -3px;
-/** margin-left: .5em;
-    padding: 4px 8px; **/
-}
 </style>
