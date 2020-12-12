@@ -166,24 +166,19 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         return getUnseenNotifications();
     }
 
-    @GET
+    @PUT
     @Path("/notification/seen/{newsId}")
     @Transactional
     public Response setNotificationSeen(@PathParam("newsId") long newsId) {
-        try {
-            if (isAuthenticatedUser()) {
-                log.warning("Nobody logged in for whom we could set the notification as seen.");
-                return Response.ok(false).build();
-            }
-            Topic notification = dmx.getTopic(newsId).loadChildTopics();
-            notification.update(notification.getChildTopics().getModel().set(NOTIFICATION_SEEN, true));
-            log.fine("Set notification " + newsId + " SEEN");
-            return Response.ok(true).build();
-        } catch (Exception e) {
-            log.warning("Could NOT set notification " + newsId + " SEEN, Caused by: "
-                    + e.getCause().toString() + ", " + e.getMessage());
-            return Response.ok(false).build();
+        if (!isAuthenticatedUser()) {
+            log.warning("Nobody logged in for whom we could set the notification as seen.");
+            return Response.noContent().build();
         }
+        Topic notification = dmx.getTopic(newsId).loadChildTopics();
+        ChildTopicsModel seen = mf.newChildTopicsModel().set(NOTIFICATION_SEEN, true);
+        notification.update(seen);
+        log.fine("Set notification " + newsId + " SEEN");
+        return Response.ok(notification).build();
     }
 
 
@@ -342,7 +337,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             notifySubscribers("Event \"" + event.getSimpleValue() + "\" created in Workspace \""
                     + workspace.getSimpleValue() +"\"", "A new event was created by \""
                     + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
-                    actingUsername.getId(), workspace);
+                    actingUsername.getId(), event);
         }
     }
 
@@ -358,7 +353,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             notifySubscribers("Note \"" + note.getSimpleValue() + "\" created in Workspace \""
                     + workspace.getSimpleValue() +"\"", "A new note was created by \""
                     + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
-                    actingUsername.getId(), workspace);
+                    actingUsername.getId(), note);
         }
     }
 
@@ -377,9 +372,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                     + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
             notifySubscribers("Topicmap \"" + topicmap.getSimpleValue() + "\" created in Workspace \""
-                    + workspace.getSimpleValue() +"\"", "A new topicmap was created by \""
-                    + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
-                    actingUsername.getId(), workspace);
+                    + workspace.getSimpleValue() +"\"", actingUsername.getSimpleValue() + " created a Topicmap "
+                            + "in workspace \""+ workspace.getSimpleValue() +"\"",
+                    actingUsername.getId(), topicmap);
         }
     }
 
@@ -390,19 +385,15 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (association.getDMXObject1().getTypeUri().equals(TOPICMAP)) {
             topic = association.getDMXObject2();
             topicmap = association.getDMXObject1();
-            log.fine("Added Topic of type \""+ topic.getTypeUri()
-                    + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
         } else {
             topic = association.getDMXObject1();
             topicmap = association.getDMXObject2();
-            log.fine("Added Topic of type \"" + topic.getTypeUri()
-                    + "\" to Topicmap \"" + topicmap.getSimpleValue() + "\"");
         }
         DMXType type = topic.getType();
         if (!topic.getTypeUri().equals(NOTIFICATION)) {
             notifySubscribers(type.getSimpleValue() + " added to Topicmap \"" + topicmap.getSimpleValue() + "\"",
-                "An entry on " + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
-                        + " was added to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap);
+                actingUser.getId() + " added " + type.getSimpleValue() + " \"" + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
+                        + "\" to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap);
         }
     }
 

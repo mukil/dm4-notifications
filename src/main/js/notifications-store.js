@@ -21,11 +21,17 @@ export default ({dm5, Vue, axios:http}) => ({
           type: "success",
           message: notification.value
         })
-      }
+      } // 
     }, */
-    markNotificationAsSeen(topicId) {
-      // TBD.
-      console.log("[Notifications] Mark notification seen", topicId)
+    markNotificationAsSeen({state}, {topic}) {
+      console.log("[Notifications] Mark notification seen", topic)
+      http.put('/notifications/notification/seen/' + topic.id).then(response => {
+        console.log("Marked "+ topic + " notification as seen - This will not be shown again.")
+        // update state.notifications
+        topic = response.data
+      }).catch(response => {
+        console.error(response)
+      })
     },
     toggleNotificationsDrawer({state}) {
       state.dialogVisible = !state.dialogVisible
