@@ -8,7 +8,7 @@ export default ({dm5, Vue, axios:http}) => ({
 
   actions: {
     _loadUnseenNotifications({state}, args) {
-      http.get('/notifications/notification/unseen').then(function(response) {
+      http.get('/notifications/notification').then(function(response) {
         state.notifications = response.data
         console.log("[Notifications] Loaded",response.data,"Notifications")
       })

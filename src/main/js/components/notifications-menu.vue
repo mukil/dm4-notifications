@@ -1,8 +1,9 @@
 <template>
   <div class="dm5-notifications">
-    <el-badge :value="notificationsCount" :max="99" v-if="notificationsButtonVisible" type="info">
-      <el-button @click="toggleNotificationsDrawer" type="text" :class="'fa fa-' + buttonIconName" title="Open Notificatons Dialog"></el-button>
+    <el-badge :value="unseenCount" :max="99" v-if="(unseenCount > 0)" @click="toggleNotificationsDrawer">
+      <el-button type="text" class="fa fa-envelope" @click="toggleNotificationsDrawer"></el-button>
     </el-badge>
+    <el-button type="text" v-if="(unseenCount == 0)" class="fa fa-envelope-o inbox-zero" @click="toggleNotificationsDrawer"></el-button>
     <el-drawer custom-class="dm5-notifications" :title="'Notifications for ' + username" :modal="false" size="40%" :append-to-body="true"
       :visible.sync="notificationsDialogVisible">
       <el-timeline :reverse="reverse" >
@@ -17,8 +18,9 @@
                 <p>Performed by {{notification.children['dmx.accesscontrol.username'].value}}</p>
             </div-->
             <el-button-group name="message-commands">
-                <el-button @click="revealTopic(notification)" icon="el-icon-edit">Reveal</el-button>
-                <el-button @click="markNotificationAsSeen(notification)" icon="el-icon-edit">Mark as seen</el-button>
+                <el-button @click="revealTopic(notification)" icon="el-icon-top-left">Reveal</el-button>
+                <el-button v-if="!notificationSeen(notification)" @click="markNotificationAsSeen(notification)" icon="el-icon-edit">Mark as seen</el-button>
+                <el-button @click="deleteNotification(notification)" icon="el-icon-delete">Delete Notification</el-button>
             </el-button-group>
         </el-timeline-item>
       </el-timeline>
@@ -38,19 +40,23 @@ export default {
 
   computed: {
     notificationsButtonVisible: function() {
-      return (this.notificationsCount > 0 && this.username)
+      return (this.username)
     },
     username: function() {
       return this.$store.state.accesscontrol.username
     },
-    notificationsCount: function() {
-      return this.$store.state.notifications.notifications.length
+    unseenCount: function() {
+      var count = 0;
+      for (var el in this.$store.state.notifications.notifications) {
+        var note = this.$store.state.notifications.notifications[el]
+        if (!this.notificationSeen(note)) {
+            count++;
+        }
+      }
+      return count
     },
     notifications: function() {
       return this.$store.state.notifications.notifications
-    },
-    buttonIconName: function() {
-      return (this.$store.state.notifications.notifications.length > 0) ? 'envelope' : 'envelope-o'
     }
   },
 
@@ -61,15 +67,18 @@ export default {
     dateTime(topic) {
       return new Date(topic.children['dmx.timestamps.created'].value).toString()
     },
+    notificationSeen(topic) {
+      return (topic.children["dmx.notification_seen"].value)
+    },
     colorType(topic) {
-      let seen = topic.children["dmx.notification_seen"].value
-      return (seen) ? "e7e7e7" : "#67C23A"
+      return (this.notificationSeen(topic)) ? "#e7e7e7" : "#67C23A"
     },
     revealTopic(topic) {
       let topicId = topic.children['dmx.involved_item_id'].value
       this.$store.dispatch("revealTopicById", topicId)
     },
     markNotificationAsSeen(topic) {
+      topic.children['dmx.notification_seen'].value = true
       this.$store.dispatch("markNotificationAsSeen", {topic: topic})
     }
   }
@@ -77,6 +86,12 @@ export default {
 </script>
 
 <style>
+.dm5-notifications .el-timeline-item__content h3 {
+    font-size: var(--heading-font-size);
+}
+.dm5-notifications .el-badge__content {
+    background-color: #67C23A;
+}
 .dm5-notifications .el-badge__content.is-fixed {
     top: 8px;
     right: 20px;
@@ -89,6 +104,13 @@ export default {
 }
 .dm5-notifications .el-button {
     padding: 4px 8px;
+}
+.dm5-notifications .el-button.inbox-zero {
+    position: relative;
+    top: 1 px;
+}
+.dm5-notifications.el-drawer {
+    overflow-y: scroll;
 }
 .dm5-notifications {
     position: relative;
