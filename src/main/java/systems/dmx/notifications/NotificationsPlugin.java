@@ -90,8 +90,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
-        if (topic.getTypeUri().equals(NOTE_TEXT)) {
-            // log.info("Note Text updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
+        if (topic.getTypeUri().equals(NOTE)) {
+            log.info("Note updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
             notifyTopicSubscribersAboutChangeset(topic, tm, tm1);
         }
     }
@@ -177,6 +177,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         Topic notification = dmx.getTopic(newsId).loadChildTopics();
         ChildTopicsModel seen = mf.newChildTopicsModel().set(NOTIFICATION_SEEN, true);
         notification.update(seen);
+        // The old call would crash since 5.x: 
+        // Clarify why: notification.update(notification.getChildTopics().getModel().set(NOTIFICATION_SEEN, true));
         log.fine("Set notification " + newsId + " SEEN");
         return Response.ok(notification).build();
     }
@@ -205,11 +207,12 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     @Transactional
-    public void notifySubscribers(String title, String body, long actingUsername, DMXObject involvedItem) {
-        // 1) create notifications for all direct subscribers of this user topic
+    public void notifySubscribers(String title, String body, long actingUsername, DMXObject involvedItem, DMXObject subscribedItem) {
+        // 1) create notifications for all "direct" subscribers of this user topic
+        String subscribedItemName = (subscribedItem != null) ? subscribedItem.getSimpleValue().toString() : "Unknown";
         log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
-                + "\" (" + involvedItem.getType().getSimpleValue() + ")");
-        createNotifications(title, body, actingUsername, involvedItem);
+                + "\" (" + involvedItem.getType().getSimpleValue() + ", Subscription: " + subscribedItemName);
+        createNotifications(title, body, actingUsername, involvedItem, subscribedItem);
         // 2) If involvedItem is tagged, create also notifications for all subscribers of these tag topics
         List<RelatedTopic> tags = null; // Defensive access check for tags on this topic type (for indirect subscriptions)
         try {
@@ -218,10 +221,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             log.fine("Skipping expected RuntimeException ... " + rex.getMessage());
         }
         if (tags != null) {
-            // 2.1) go trough all tags of this topic
+            // 2.1) for all "indirect subscribers" of this topic via tags
             for (RelatedTopic tag : tags) {
                 log.info("Notifying subscribers of tag \"" + tag.getSimpleValue() + "\"");
-                // 2.2) for all subscribers of this tag
                 createNotifications(title, body, actingUsername, involvedItem, tag);
             }
         }
@@ -241,7 +243,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     @Override
     public List<RelatedTopic> getNotifications() {
         if (!isAuthenticatedUser()) {
-            throw new RuntimeException("For users to read their notifications they must be authenticated.");
+            // throw new RuntimeException("For users to load notifications they must be authenticated.");
+            return new ArrayList<>();
         }
         Topic account = accesscontrol.getUsernameTopic();
         //
@@ -307,22 +310,13 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
     
-    private void notifyTopicSubscribersAboutChangeset(Topic childValueTopicEdited, TopicModel tm1, TopicModel tm2) {
+    private void notifyTopicSubscribersAboutChangeset(Topic topicUpdated, TopicModel tm1, TopicModel tm2) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
-        List<RelatedTopic> parentTopics = childValueTopicEdited.getRelatedTopics(COMPOSITION, CHILD, PARENT, null);
         // The following limitation is SAFE as long (see Line 282) as we just support subscriptions on "Note" topics
-        // TODO: Potentially many topic which subscribers should be notified. Skipping support for this, taking any.
-        if (parentTopics.size() > 0) {
-            RelatedTopic subscribedItem = parentTopics.get(0);
-            notifySubscribers("Topic \"" + subscribedItem.getSimpleValue()
-                    + "\" edited by user \""+actingUsername.getSimpleValue()+"\"", "<p>As a subscriber of topic \""
-                    + subscribedItem.getSimpleValue() +"\" you receive this automatic "
-                    + "notification about the update of " + childValueTopicEdited.getType().getSimpleValue()
-                        + " by <em>"+actingUsername.getSimpleValue() +"</em>.</p>"
-                    +"<h3>"+ subscribedItem.getType().getSimpleValue() +" Before</h3><p>"+ tm2.getSimpleValue() +"</p>"
-                    +"<h3>"+ subscribedItem.getType().getSimpleValue() +" After</h3><p>"+ tm1.getSimpleValue() +"</p>",
-                    actingUsername.getId(), subscribedItem);
-        }
+        notifySubscribers(actingUsername.getSimpleValue() + " edited "
+                + topicUpdated.getType().getSimpleValue() + " \"" + topicUpdated.getSimpleValue(), "\""+actingUsername.getSimpleValue() +"\" edited "
+                + topicUpdated.getType().getSimpleValue() + " \"" + topicUpdated.getSimpleValue(),
+            actingUsername.getId(), topicUpdated, null);
     }
 
     private void notifyWorkspaceSubscribersAboutNewEvent(Topic event, long workspaceId) {
@@ -334,10 +328,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             log.info("Notifying subscribers about new event created by \"" + actingUsername.getSimpleValue()
                     + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
-            notifySubscribers("Event \"" + event.getSimpleValue() + "\" created in Workspace \""
-                    + workspace.getSimpleValue() +"\"", "A new event was created by \""
-                    + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
-                    actingUsername.getId(), event);
+            notifySubscribers(actingUsername.getSimpleValue() + " created the event \"" + event.getSimpleValue() + "\" in Workspace \""
+                    + workspace.getSimpleValue() +"\"", actingUsername.getSimpleValue() + " created the event \"" + event.getSimpleValue() + "\" in workspace \""+ workspace.getSimpleValue() +"\"",
+                    actingUsername.getId(), event, workspace);
         }
     }
 
@@ -350,10 +343,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             log.info("Notifying subscribers about new note created by \"" + actingUsername.getSimpleValue()
                     + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
-            notifySubscribers("Note \"" + note.getSimpleValue() + "\" created in Workspace \""
-                    + workspace.getSimpleValue() +"\"", "A new note was created by \""
-                    + actingUsername.getSimpleValue() +"\" in workspace \""+ workspace.getSimpleValue() +"\"",
-                    actingUsername.getId(), note);
+            notifySubscribers(actingUsername.getSimpleValue() +" noted \"" + note.getSimpleValue() + "\" in workspace \"" + workspace.getSimpleValue() +"\"",
+                    actingUsername.getSimpleValue() +" noted \"" + note.getSimpleValue() + "\" in workspace \""+ workspace.getSimpleValue() +"\"",
+                    actingUsername.getId(), note, workspace);
         }
     }
 
@@ -365,16 +357,12 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             Topic workspace = dmx.getTopic(workspaceId);
             // Fixme: no "Topicmap Name" available here yet (simpleValue is empty, children not associated)
             topicmap.loadChildTopics();
-            log.info("Topicmap in creation " + topicmap.toJSON().toString());
-            Topic map2 = dmx.getTopic(topicmap.getId());
-            log.info("Topicmap in storage " + map2.toJSON().toString());
-            log.info("Notifying subscribers about new topicmap created by \"" + actingUsername.getSimpleValue()
-                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
-            notifySubscribers("Topicmap \"" + topicmap.getSimpleValue() + "\" created in Workspace \""
-                    + workspace.getSimpleValue() +"\"", actingUsername.getSimpleValue() + " created a Topicmap "
+            notifySubscribers(actingUsername.getSimpleValue() + " created topicmap \"" + topicmap.getSimpleValue() + "\" "
                             + "in workspace \""+ workspace.getSimpleValue() +"\"",
-                    actingUsername.getId(), topicmap);
+                    actingUsername.getSimpleValue() + " created topicmap \"" + topicmap.getSimpleValue() + "\" "
+                            + "in workspace \""+ workspace.getSimpleValue() +"\"",
+                    actingUsername.getId(), topicmap, workspace);
         }
     }
 
@@ -393,18 +381,13 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (!topic.getTypeUri().equals(NOTIFICATION)) {
             notifySubscribers(type.getSimpleValue() + " added to Topicmap \"" + topicmap.getSimpleValue() + "\"",
                 actingUser.getId() + " added " + type.getSimpleValue() + " \"" + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
-                        + "\" to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap);
+                        + "\" to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap, null);
         }
     }
 
     private boolean isAuthenticatedUser() {
         String username = accesscontrol.getUsername();
         return (username != null && !username.isEmpty());
-    }
-
-    private void createNotifications(String title, String text, long actingUsername,
-            DMXObject involvedItem) {
-        createNotifications(title, text, actingUsername, involvedItem, null);
     }
 
     /**

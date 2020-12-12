@@ -42,9 +42,10 @@ public interface NotificationsService {
      * @param   title           title of the notification
      * @param   message         text part of the notification
      * @param   actionAccountId topic-id of user account performing the action which leads to the notification of all others
-     * @param   item            item users can have subscribed (either "User Account" or any TopicType with "Tags" as child)
+     * @param   involvedItem    item users can have subscribed (either "User Account" or any TopicType with "Tags" as child)
+     * @param   subscribedItem  item users can have subscribed (either "User Account" or any TopicType with "Tags" as child)
      */
-    public void notifySubscribers(String title, String message, long actionAccountId, DMXObject item);
+    public void notifySubscribers(String title, String message, long actionAccountId, DMXObject involvedItem, DMXObject subscribedItem);
 
     /** Gets all subscribed topics for the logged-in user. */
     public List<RelatedTopic> getSubscriptions();
