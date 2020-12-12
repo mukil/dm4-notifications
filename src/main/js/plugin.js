@@ -10,19 +10,27 @@ export default ({dm5, store, axios: http, Vue}) => ({
     module: require('./notifications-store').default
   },
 
+  extraElementUI: true,
+
+  components: [{
+    comp: require('./components/notifications-menu').default,
+    mount: 'toolbar-right'
+  }],
+
   contextCommands: {
     topic: topic => {
       let isLoggedIn = (store.state.accesscontrol.username)
       if ((isLoggedIn && topic.typeUri === 'dmx.topicmaps.topicmap') || (isLoggedIn && topic.typeUri === 'dmx.notes.note') ||
          (isLoggedIn && topic.typeUri === 'dmx.workspaces.workspace') || (isLoggedIn && topic.typeUri === 'dmx.events.event')) { 
         // 1) Check: if alread subscribed
-        let hasTargetTypeConfigured = true
-        /**  dm5.restClient.getTopicRelatedTopics(topic.id, {
-          assocTypeUri: "dmx.csv.file_import", othersTopicTypeUri: "dmx.core.topic_type"})
-                .then(response => {
-                  hasTargetTypeConfigured = (response.length > 0) ? true : false
-                })**/
-        // 2) Allow for "Subscrbe" and "Unsubscribe" commands
+        let isSubscribed = false
+        /** dm5.rpc.getTopicRelatedTopics(topic.id, {
+          assocTypeUri: "dmx.notification.subscription_edge",
+          othersTopicTypeUri: "dmx.core.topic_type"})
+            .then(response => {
+              hasTargetTypeConfigured = (response.length > 0) ? true : false
+            })
+        // 2) Allow for "Subscribe" and "Unsubscribe" commands
         /** return [{
           label: 'Import CSV',
           handler: id => {
