@@ -1,10 +1,10 @@
 <template>
-  <div class="dm5-notifications">
+  <div class="dmx-notifications">
     <el-badge :value="unseenCount" :max="99" v-if="(unseenCount > 0)" @click="toggleNotificationsDrawer">
       <el-button type="text" class="fa fa-envelope" @click="toggleNotificationsDrawer"></el-button>
     </el-badge>
     <el-button type="text" v-if="(unseenCount == 0)" class="fa fa-envelope-o inbox-zero" @click="toggleNotificationsDrawer"></el-button>
-    <el-drawer custom-class="dm5-notifications" :title="'Notifications for ' + username" :modal="false" size="40%" :append-to-body="true"
+    <el-drawer custom-class="dmx-notifications" :title="'Notifications for ' + username" :modal="false" size="40%" :append-to-body="true"
       :visible.sync="notificationsDialogVisible">
       <el-timeline :reverse="reverse" >
         <el-timeline-item placement="top"
@@ -80,39 +80,42 @@ export default {
     markNotificationAsSeen(topic) {
       topic.children['dmx.notification_seen'].value = true
       this.$store.dispatch("markNotificationAsSeen", {topic: topic})
+    },
+    deleteNotification(topic) {
+      this.$store.dispatch("deleteNotification", {topic: topic})
     }
   }
 }
 </script>
 
 <style>
-.dm5-notifications .el-timeline-item__content h3 {
+.dmx-notifications .el-timeline-item__content h3 {
     font-size: var(--heading-font-size);
 }
-.dm5-notifications .el-badge__content {
+.dmx-notifications .el-badge__content {
     background-color: #67C23A;
 }
-.dm5-notifications .el-badge__content.is-fixed {
+.dmx-notifications .el-badge__content.is-fixed {
     top: 8px;
     right: 20px;
 }
-.dm5-notifications .el-timeline-item__wrapper {
+.dmx-notifications .el-timeline-item__wrapper {
     padding-right: 2em;
 }
-.dm5-notifications .el-timeline-item__timestamp.is-top {
+.dmx-notifications .el-timeline-item__timestamp.is-top {
     padding-top: 2px;
 }
-.dm5-notifications .el-button {
+.dmx-notifications .el-button {
     padding: 4px 8px;
 }
-.dm5-notifications .el-button.inbox-zero {
+.dmx-notifications .el-button.inbox-zero {
     position: relative;
-    top: 1 px;
+    top: 2px;
 }
-.dm5-notifications.el-drawer {
+.dmx-notifications.el-drawer {
     overflow-y: scroll;
 }
-.dm5-notifications {
+.dmx-notifications {
     position: relative;
     top: -3px;
 }

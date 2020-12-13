@@ -90,8 +90,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     @Override
     public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
-        if (topic.getTypeUri().equals(NOTE)) {
-            log.info("Note updated " + topic.getSimpleValue() + "Model 1: " + tm + ", Model 2: " + tm1);
+        if (topic.getTypeUri().equals(NOTE) || topic.getTypeUri().equals(EVENT)) {
             notifyTopicSubscribersAboutChangeset(topic, tm, tm1);
         }
     }
@@ -183,6 +182,13 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         return Response.ok(notification).build();
     }
 
+    @DELETE
+    @Path("/notification/{newsId}")
+    @Transactional
+    public Response deleteNotification(@PathParam("newsId") long newsId) {
+        dmx.deleteTopic(newsId);
+        return Response.ok().build();
+    }
 
 
     // --------------------------------------------------------------------------- Notifications Service Implementation
