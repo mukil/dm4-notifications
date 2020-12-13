@@ -3,6 +3,7 @@ export default ({dmx, store, axios: http, Vue}) => ({
   init () {
     console.log("[DMX Notifications] Initializing")
     store.dispatch("_loadUnseenNotifications", { username: "me"})
+    // React to login! and logout!
   },
 
   storeModule: {
@@ -22,6 +23,7 @@ export default ({dmx, store, axios: http, Vue}) => ({
       let isLoggedIn = (store.state.accesscontrol.username)
       if ((isLoggedIn && topic.typeUri === 'dmx.topicmaps.topicmap') || (isLoggedIn && topic.typeUri === 'dmx.notes.note') ||
          (isLoggedIn && topic.typeUri === 'dmx.workspaces.workspace') || (isLoggedIn && topic.typeUri === 'dmx.events.event')) { 
+        // Fixme: allow subscription of "Tags" again
         // 1) Check: if alread subscribed
         /** let isSubscribed = false
         dmx.rpc.getTopicRelatedTopics(topic.id, {
@@ -36,12 +38,13 @@ export default ({dmx, store, axios: http, Vue}) => ({
           handler: id => {
               http.post(`/notifications/subscribe/${id}`).then(function (response) {
                 Vue.prototype.$notify({
-                  title: "Topic Subscribed",
+                  title: "Subscribed to " + dmx.typeCache.getTopicType(topic.typeUri).value + " " + topic.value,
                   type: "success"
                 })
               }).catch(function (error) {
+                console.log("error", error)
                 Vue.prototype.$notify({
-                  title: "Subscribing topic failed",
+                  title: "Subscribing to " + dmx.typeCache.getTopicType(topic.typeUri).value  + " failed",
                   message: error.toString(),
                   type: "error"
                 })
@@ -53,12 +56,13 @@ export default ({dmx, store, axios: http, Vue}) => ({
             handler: id => {
               http.post(`/notifications/unsubscribe/${id}`).then(function (response) {
                 Vue.prototype.$notify({
-                  title: "Topic Unsubscribed",
+                  title: "Unsubscribed from " + dmx.typeCache.getTopicType(topic.typeUri).value + " " + topic.value,
                   type: "success"
                 })
               }).catch(function (error) {
+                console.log("error", error)
                 Vue.prototype.$notify({
-                  title: "Unsubscribing topic failed",
+                  title: "Unsubscribing from " + dmx.typeCache.getTopicType(topic.typeUri).value + " " + topic.value + " failed",
                   message: error.toString(),
                   type: "error"
                 })

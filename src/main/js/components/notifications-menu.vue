@@ -1,5 +1,5 @@
 <template>
-  <div class="dmx-notifications">
+  <div class="dmx-notifications" v-if="(username)">
     <el-badge :value="unseenCount" :max="99" v-if="(unseenCount > 0)" @click="toggleNotificationsDrawer">
       <el-button type="text" class="fa fa-envelope" @click="toggleNotificationsDrawer"></el-button>
     </el-badge>

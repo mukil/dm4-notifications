@@ -31,7 +31,6 @@ import systems.dmx.core.service.event.PostUpdateTopic;
 import systems.dmx.core.util.DMXUtils;
 import static systems.dmx.events.Constants.EVENT;
 import static systems.dmx.notes.Constants.NOTE;
-import static systems.dmx.notes.Constants.NOTE_TEXT;
 import static systems.dmx.notifications.NotificationsService.INVOLVED_ITEM_ID;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION_BODY;
@@ -59,8 +58,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                                                                     PostCreateAssoc {
 
     private static Logger log = Logger.getLogger(NotificationsPlugin.class.getName());
-
-    private static final String NOTIFICATON_BUNDLE_URI  = "systems.dmx.notifications";
 
     @Inject
     private AccessControlService accesscontrol = null;
@@ -128,6 +125,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             unsubscribe(itemId);
             return Response.ok().build();
         }
+        // Todo: Return assocId in directive to webclient so assoc is not displayed any longer (if present)!
         return Response.noContent().build();
     }
 
@@ -386,7 +384,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         DMXType type = topic.getType();
         if (!topic.getTypeUri().equals(NOTIFICATION)) {
             notifySubscribers(type.getSimpleValue() + " added to Topicmap \"" + topicmap.getSimpleValue() + "\"",
-                actingUser.getId() + " added " + type.getSimpleValue() + " \"" + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
+                actingUser.getSimpleValue()+ " added " + type.getSimpleValue() + " \"" + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
                         + "\" to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap, null);
         }
     }
