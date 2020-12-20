@@ -1,5 +1,8 @@
 export default function ({dmx, store, axios: http, Vue}) {
 
+  // reference to selected topic used in contextCommand handlers
+  let topic = undefined
+
   const subscribeCmd = {
     label: 'Subscribe',
     handler: id => {
@@ -38,29 +41,29 @@ export default function ({dmx, store, axios: http, Vue}) {
     }
   }
 
-  function determineCommands(topic) {
-
+  function determineCommands(selectedTopic) {
+    // keep reference for command handlers
+    topic = selectedTopic
     const isLoggedIn = (store.state.accesscontrol.username)
     const isSupportedType = (
-        topic.typeUri === 'dmx.topicmaps.topicmap' ||
-        topic.typeUri === 'dmx.notes.note' ||
-        topic.typeUri === 'dmx.workspaces.workspace' || 
-        topic.typeUri === 'dmx.events.event')
+        selectedTopic.typeUri === 'dmx.topicmaps.topicmap' ||
+        selectedTopic.typeUri === 'dmx.notes.note' ||
+        selectedTopic.typeUri === 'dmx.workspaces.workspace' ||
+        selectedTopic.typeUri === 'dmx.events.event')
     // 1) topic is unsupported
     if (!isLoggedIn || !isSupportedType) return []
     // 2) topic is supported
-    return http.get('/notifications/subscription/' + topic.id).then(result => {
-      return (result.data) ? [unsubscribeCmd] : [subscribeCmd]
+    return http.get('/notifications/subscription/' + selectedTopic.id).then(result => {
+      return (result.data) ? unsubscribeCmd : subscribeCmd
     })
-
   }
-  
+
   return {
+    // Fixme: Open platform issue to be able to react to login! and logout!
     init () {
       if (store.state.accesscontrol.username) {
         store.dispatch("_loadUnseenNotifications", { username: "me"}) 
       }
-      // React to login! and logout!
     },
 
     storeModule: {
@@ -76,10 +79,7 @@ export default function ({dmx, store, axios: http, Vue}) {
     }],
 
     contextCommands: {
-      topic: topic => determineCommands(topic).then(result => {
-        console.log("determinedCommands", result)
-        return result
-      })
+      topic: topic => [determineCommands(topic)]
     }
   }
 
