@@ -53,9 +53,9 @@ export default function ({dmx, store, axios: http, Vue}) {
     // 1) topic is unsupported
     if (!isLoggedIn || !isSupportedType) return []
     // 2) topic is supported
-    return http.get('/notifications/subscription/' + selectedTopic.id).then(result => {
+    return [http.get('/notifications/subscription/' + selectedTopic.id).then(result => {
       return (result.data) ? unsubscribeCmd : subscribeCmd
-    })
+    })]
   }
 
   return {
@@ -79,7 +79,7 @@ export default function ({dmx, store, axios: http, Vue}) {
     }],
 
     contextCommands: {
-      topic: topic => [determineCommands(topic)]
+      topic: topic => determineCommands(topic)
     }
   }
 

@@ -75,6 +75,7 @@ export default {
     },
     revealTopic(topic) {
       let topicId = topic.children['dmx.involved_item_id'].value
+      // selectTopicmap ({dispatch}, id) 
       this.$store.dispatch("revealTopicById", topicId)
     },
     markNotificationAsSeen(topic) {
