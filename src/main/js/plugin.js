@@ -59,11 +59,9 @@ export default function ({dmx, store, axios: http, Vue}) {
   }
 
   return {
-    // Fixme: Open platform issue to be able to react to login! and logout!
+    // ### Fixme: How to react to login! and logout! in dmx-webclient?
     init () {
-      if (store.state.accesscontrol.username) {
-        store.dispatch("_loadUnseenNotifications", { username: "me"}) 
-      }
+      store.dispatch("_loadUnseenNotifications", { username: "me"}) 
     },
 
     storeModule: {

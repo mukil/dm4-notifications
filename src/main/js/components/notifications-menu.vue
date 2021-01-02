@@ -31,10 +31,14 @@
 <script>
 export default {
 
+  inject: {
+    dmx: 'dmx'
+  },
+
   data() {
     return {
-        reverse: true,
-        notificationsDialogVisible: false
+      reverse: true,
+      notificationsDialogVisible: false
     }
   },
 
@@ -75,8 +79,14 @@ export default {
     },
     revealTopic(topic) {
       let topicId = topic.children['dmx.involved_item_id'].value
-      // selectTopicmap ({dispatch}, id) 
-      this.$store.dispatch("revealTopicById", topicId)
+      this.dmx.rpc.getTopic(topicId, false).then(response => {
+        // Select Topicmap
+        if (response.typeUri === "dmx.topicmaps.topicmap") {
+          this.$store.dispatch("selectTopicmap", response.id)
+        } else { // Reveal Topic
+          this.$store.dispatch("revealTopicById", response.id)
+        }
+      })
     },
     markNotificationAsSeen(topic) {
       topic.children['dmx.notification_seen'].value = true

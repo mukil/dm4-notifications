@@ -384,8 +384,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         DMXType type = topic.getType();
         if (!topic.getTypeUri().equals(NOTIFICATION)) {
             notifySubscribers(type.getSimpleValue() + " added to Topicmap \"" + topicmap.getSimpleValue() + "\"",
-                actingUser.getSimpleValue()+ " added " + type.getSimpleValue() + " \"" + ((topic.getSimpleValue().toString().isEmpty()) ? "..." : topic.getSimpleValue())
-                        + "\" to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap, null);
+                actingUser.getSimpleValue()+ " added " + type.getSimpleValue() + " " + ((topic.getSimpleValue().toString().isEmpty()) ? "" : topic.getSimpleValue())
+                        + " to Topicmap \""+ topicmap.getSimpleValue() +"\"", actingUser.getId(), topicmap, null);
         }
     }
 
