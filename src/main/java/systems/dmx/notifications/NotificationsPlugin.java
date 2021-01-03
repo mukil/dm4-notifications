@@ -284,29 +284,34 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     // ---------------------------------------------------------------------------------------------- Private Methods
 
     @Transactional
-    private void subscribeInApp(long accountId, long itemId) {
+    private void subscribeInApp(long usernameId, long itemId) {
         try {
-            // 2) Create an "In App" subscription (if not already existent)
-            if (!associationExists(SUBSCRIPTION_EDGE, itemId, accountId)) {
-                AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
-                    mf.newTopicPlayerModel(accountId, DEFAULT),
-                    mf.newTopicPlayerModel(itemId, DEFAULT),
-                    mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
-                dmx.createAssoc(model);
-                log.info("New subscription for user:" + accountId + " to item:" + itemId);
+            // Create an "In App" subscription (if not already existent)
+            if (!associationExists(SUBSCRIPTION_EDGE, itemId, usernameId)) {
+                Topic username = dmx.getTopic(usernameId);
+                Topic usersWorkspace = dmx.getPrivilegedAccess().getPrivateWorkspace(username.getSimpleValue().toString());
+                dmx.getPrivilegedAccess().runInWorkspaceContext(usersWorkspace.getId(), () -> {
+                    AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
+                        mf.newTopicPlayerModel(usernameId, DEFAULT),
+                        mf.newTopicPlayerModel(itemId, DEFAULT),
+                        mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
+                    Assoc assoc = dmx.createAssoc(model);
+                    log.info("New subscription for user:" + usernameId + " to item:" + itemId);
+                    return assoc;
+                });
             } else {
-                log.info("Subscription already exists between " + accountId + " and " + itemId);
+                log.info("Subscription already exists between " + usernameId + " and " + itemId);
             }
         } catch (Exception e) {
             log.warning("ROLLBACK!");
-            log.warning("Subscription between " +accountId+ " and " +itemId+ " not created.");
+            log.warning("Subscription between " +usernameId+ " and " +itemId+ " not created.");
             throw new RuntimeException(e);
         }
     }
 
     @Transactional
-    private void unsubscribe(long accountId, long itemId) {
-        List<Assoc> assocs = dmx.getAssocs(accountId, itemId, SUBSCRIPTION_EDGE);
+    private void unsubscribe(long usernameId, long itemId) {
+        List<Assoc> assocs = dmx.getAssocs(usernameId, itemId, SUBSCRIPTION_EDGE);
         Iterator<Assoc> iterator = assocs.iterator();
         while (iterator.hasNext()) {
             Assoc assoc = iterator.next();
@@ -329,9 +334,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             // workspace may be "-1" if someone just created it, and therewith implicitly an "untitled" topicmap gets created
             // which brings us here, if the workspace in which the new workspace is created is watched by someone...
             Topic workspace = dmx.getTopic(workspaceId);
-            log.info("Notifying subscribers about new event created by \"" + actingUsername.getSimpleValue()
-                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
-            // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
             notifySubscribers(actingUsername.getSimpleValue() + " created the event \"" + event.getSimpleValue() + "\" in Workspace \""
                     + workspace.getSimpleValue() +"\"", actingUsername.getSimpleValue() + " created the event \"" + event.getSimpleValue() + "\" in workspace \""+ workspace.getSimpleValue() +"\"",
                     actingUsername.getId(), event, workspace);
@@ -416,11 +418,11 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                 DEFAULT, DEFAULT, USERNAME);
         }
         // 3) For all subscribers create the following notification
-        for (RelatedTopic subscriber : subscribers) {
+        for (RelatedTopic username : subscribers) {
             // 3.1) Except for the actor herself, she does not get a notification on her action
-            if (subscriber.getId() != actingUsername) {
-                log.info("Identified subscription, notifying user " + subscriber.getSimpleValue());
-                createNotificationTopic(subscriber, title, text, actingUsername, involvedItem, subscribedItem);
+            if (username.getId() != actingUsername) {
+                log.info("Identified subscription, notifying user " + username.getSimpleValue());
+                createNotificationTopic(username, title, text, actingUsername, involvedItem, subscribedItem);
                 // ### sendMailNotification(subscriber, title, text, actingUsername, involvedItem, subscribedItem);
             }
         }
@@ -435,56 +437,38 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     /**
      * Creates a notification topic in the \"Private workspace\" of the given user represented by the "subscriber"
      * topic and associates it with its "Username" using an association of type "Notification Recipient".
-     * @param subscriber
+     * @param username
      * @param title
      * @param text
      * @param actingUsername
      * @param involvedItem
      * @param subscribedItem
      */
-    private void createNotificationTopic(final Topic subscriber, final String title, final String text,
+    private void createNotificationTopic(final Topic username, final String title, final String text,
             final long actingUsername, final DMXObject involvedItem, final DMXObject subscribedItem) {
         try {
-            dmx.getPrivilegedAccess().runWithoutWorkspaceAssignment(new Callable<Topic>() {
-                @Override
-                public Topic call() {
-                    // 1) Create instance of notification
-                    ChildTopicsModel message = mf.newChildTopicsModel()
-                            .set(NOTIFICATION_SEEN, false)
-                            .set(NOTIFICATION_TITLE, title)
-                            .set(NOTIFICATION_BODY, text)
-                            .setRef(USERNAME, actingUsername)
-                            .set(INVOLVED_ITEM_ID, involvedItem.getId());
-                    if (subscribedItem != null) message.set(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
-                    TopicModel model = mf.newTopicModel(NOTIFICATION, message);
-                    Topic notification = dmx.createTopic(model);
-                    Topic privateWorkspace = dmx.getPrivilegedAccess()
-                            .getPrivateWorkspace(subscriber.getSimpleValue().toString());
-                    dmx.getPrivilegedAccess().assignToWorkspace(notification, privateWorkspace.getId());
-                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
-                            .getTopic(NOTIFICATION_TITLE), privateWorkspace.getId());
-                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
-                            .getTopic(NOTIFICATION_BODY), privateWorkspace.getId());
-                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
-                            .getTopic(NOTIFICATION_SEEN), privateWorkspace.getId());
-                    dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
-                            .getTopic(INVOLVED_ITEM_ID), privateWorkspace.getId());
-                    if (subscribedItem != null) {
-                        dmx.getPrivilegedAccess().assignToWorkspace(notification.getChildTopics()
-                                .getTopic(SUBSCRIBED_ITEM_ID), privateWorkspace.getId());
-                    }
-                    // Improvement: Try using topicmaps.setViewProperties()... (not having a topicmap) to colorize..
-                    // 2) Hook up notification with subscriber
-                    AssocModel recipientModel = mf.newAssocModel(NOTIFICATION_RECIPIENT_EDGE,
-                            model.createPlayerModel(DEFAULT),
-                            mf.newTopicPlayerModel(subscriber.getId(), DEFAULT));
-                    Assoc recipient = dmx.createAssoc(recipientModel);
-                    dmx.getPrivilegedAccess().assignToWorkspace(recipient, privateWorkspace.getId());
-                    return notification;
-                }
+            Topic usersWorkspace = dmx.getPrivilegedAccess().getPrivateWorkspace(username.getSimpleValue().toString());
+            dmx.getPrivilegedAccess().runInWorkspaceContext(usersWorkspace.getId(), () -> {
+                // 1) Create notification topic
+                ChildTopicsModel message = mf.newChildTopicsModel()
+                        .set(NOTIFICATION_SEEN, false)
+                        .set(NOTIFICATION_TITLE, title)
+                        .set(NOTIFICATION_BODY, text)
+                        .setRef(USERNAME, actingUsername)
+                        .set(INVOLVED_ITEM_ID, involvedItem.getId());
+                if (subscribedItem != null) message.set(SUBSCRIBED_ITEM_ID, subscribedItem.getId());
+                TopicModel model = mf.newTopicModel(NOTIFICATION, message);
+                Topic notification = dmx.createTopic(model);
+                // Improvement: Try using topicmaps.setViewProperties()... (not having a topicmap) to colorize..
+                // 2) Relate notification to subscribing  username topic
+                AssocModel recipientModel = mf.newAssocModel(NOTIFICATION_RECIPIENT_EDGE,
+                        model.createPlayerModel(DEFAULT),
+                        mf.newTopicPlayerModel(username.getId(), DEFAULT));
+                dmx.createAssoc(recipientModel);
+                return notification;
             });
         } catch (Exception ex) {
-            throw new RuntimeException("Creating notification for user "+subscriber.getSimpleValue()+" failed", ex);
+            throw new RuntimeException("Creating notification for user "+username.getSimpleValue()+" failed", ex);
         }
     }
 
