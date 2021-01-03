@@ -1,7 +1,9 @@
 
 # DMX Notifications
 
-The DMX Notifications plugin makes it easy for developers to create persistent notifications across sessions and screens. It furthermore takes care that the notifications end up in the recipients _Private Workspace_.
+The DMX Notifications plugin makes it easy for developers to create persistent notifications across sessions and screens.
+
+Important: There are several privacy-related issues unsolved (see https://git.dmx.systems/dmx-plugins/dmx-notifications/-/issues/10). The current version is experimental and released for DEMO purposes only. Furthermore, the type definition should not be used as a template for other plugins (see https://git.dmx.systems/dmx-plugins/dmx-notifications/-/issues/12). The latest version does not resemble the feature of the DM 4 version yet (see https://git.dmx.systems/dmx-plugins/dmx-notifications/-/issues/11).
 
 The use case is:
 
@@ -24,34 +26,16 @@ The following figure you find an overview of the type definitionst dmx-notificat
 
 ## Usage: Subscribe items to receive notifications
 
-A subscription is created (using the DMX Webclient) through creating a `Notification Subscription` association between your `Username` topic and a topic of type `Workspace`, `Topicmap` or `Note`. For example see the following screenshot.
-
-![Notification Subscription Example: "admin" subscribed to three items](https://github.com/mukil/dmx-notifications/raw/master/docs/notification_subscription_configuration.png)
-
-For the mentioned subscriptions the following actions will notify subscribers:
-*   Workspace: Whenever a new *Topicmap*, *Note* or *Event* is created in the workspace
-*   Topicmap: Whenever another user with write permission `adds a topic` to it
-*   Note: Whenever another user with WRITE permissions `Edits` the contents of the note<br/>
-    (In this case, the notificiation includes the old and the new contents of the topic, [example](https://github.com/mukil/dmx-notifications/blob/master/docs/screen_c_notification_topics_75perc.png))
+A subscription is created using the "Subscribe" (resp. "Unsubscribe") context command on eligible topics.
 
 ### Accessing notifications (In-App) 
 
-When logged in you find your notifications related to your username. You can reveal your username in a topicmap using the Search/Create Dialog. Related to your username you will find all your _Notifications_. You can navigate to your notifications also using the *Related* tab after revealing your `Private Workspace`.
-
-![Accessing your notification in the Webclient](https://github.com/mukil/dmx-notifications/raw/master/docs/screen_b_notification_topics_75perc.png)
-
-As of DMX there is no special display (yet) which delivers you your notifications in a more convenient way. Of course, you're very welcome to encourage us or help us to design or create one :)
-
-Your _Notifications_ are accessible and readable to you only (unless you move them to another workspace). 
+When logged in you find your notifications behind the Envelope-icon in the upper right corner of the window. A badge indicates your unread notifications.
 
 ## Requirements
 
-DMX 5.0 is a platform for collaboration and knowledge management.
-https://github.com/jri/deepamehta
-
-## Download & Installation
-
-You can download the latest `dmx-notifications`-Bundle [here](http://download.dmx.systems/).
+DMX 5.1 is a platform for collaboration and knowledge management.
+https://github.com/dmx-systems/dmx-platform
 
 ## GNU AGPL Public License
 
@@ -98,5 +82,9 @@ Note: This release is not compatible with previous releases and there is no migr
 - compatible with DM4.2
 
 --------------------------
-Author: Malte Reißig, 2014 - 2017
+Authors
+-------
+Copyright (C) 2014-2019 Malte Reißig 
+
+Copyright (C) 2020-2021 DMX Systems
 
