@@ -213,8 +213,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     public void notifySubscribers(String title, String body, long actingUsername, DMXObject involvedItem, DMXObject subscribedItem) {
         // 1) create notifications for all "direct" subscribers of this user topic
         String subscribedItemName = (subscribedItem != null) ? subscribedItem.getSimpleValue().toString() : "Unknown";
-        log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
-                + "\" (" + involvedItem.getType().getSimpleValue() + ", Subscribed Item Name \"" + subscribedItemName + "\")");
+        log.fine("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
+            + "\" (" + involvedItem.getType().getSimpleValue() + ", Subscribed Item Name \"" + subscribedItemName + "\")");
         createNotifications(title, body, actingUsername, involvedItem, subscribedItem);
         // 2) If involvedItem is tagged, create also notifications for all subscribers of these tag topics
         List<RelatedTopic> tags = null; // Defensive access check for tags on this topic type (for indirect subscriptions)
@@ -226,7 +226,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         if (tags != null) {
             // 2.1) for all "indirect subscribers" of this topic via tags
             for (RelatedTopic tag : tags) {
-                log.info("Notifying subscribers of tag \"" + tag.getSimpleValue() + "\"");
+                log.fine("Notifying subscribers of tag \"" + tag.getSimpleValue() + "\"");
                 createNotifications(title, body, actingUsername, involvedItem, tag);
             }
         }
@@ -297,9 +297,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                 log.info("Subscription already exists between " + usernameId + " and " + itemId);
             }
         } catch (Exception e) {
-            log.warning("ROLLBACK!");
-            log.warning("Subscription between " +usernameId+ " and " +itemId+ " not created.");
-            throw new RuntimeException(e);
+            throw new RuntimeException("Subscription between " +usernameId+ " and " +itemId+ " not created.", e);
         }
     }
 
@@ -315,10 +313,11 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     
     private void notifyTopicSubscribersAboutChangeset(Topic topicUpdated, TopicModel tm1, TopicModel tm2) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
+        log.info("TopicModel 1: " + tm1.toJSON().toString() + ", TopicModel 2: " + tm2.toJSON().toString());
         // The following limitation is SAFE as long (see Line 282) as we just support subscriptions on "Note" topics
         notifySubscribers(actingUsername.getSimpleValue() + " edited "
                 + topicUpdated.getType().getSimpleValue() + " \"" + topicUpdated.getSimpleValue(), "\""+actingUsername.getSimpleValue() +"\" edited "
-                + topicUpdated.getType().getSimpleValue() + " \"" + topicUpdated.getSimpleValue(),
+                + topicUpdated.getType().getSimpleValue() + " \"" + topicUpdated.getSimpleValue() + "\"",
             actingUsername.getId(), topicUpdated, null);
     }
 
@@ -457,7 +456,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                         model.createPlayerModel(DEFAULT),
                         mf.newTopicPlayerModel(username.getId(), DEFAULT));
                 dmx.createAssoc(recipientModel);
-                log.info("Created notification for " + username.getSimpleValue() + " with title \"" + notification.getSimpleValue() + "\"");
+                log.info("Created notification for \"" + username.getSimpleValue() + "\" with title \"" + notification.getSimpleValue() + "\"");
                // return notification;
             // });
         } catch (Exception ex) {

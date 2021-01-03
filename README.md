@@ -55,7 +55,7 @@ You can download the latest `dmx-notifications`-Bundle [here](http://download.dm
 
 ## GNU AGPL Public License
 
-This sofware is released under the terms of the GNU Affero General Public License v3.0.
+DMX Notifications is available freely under the GNU Affero General Public License, version 3 or later (see [License](https://git.dmx.systems/dmx-plugins/dmx-sign-up/-/blob/master/LICENSE)).
 
 ## Version History
 
