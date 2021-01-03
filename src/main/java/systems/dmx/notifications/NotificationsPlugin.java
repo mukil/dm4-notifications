@@ -1,10 +1,10 @@
 package systems.dmx.notifications;
 
 
+import com.sun.jersey.spi.container.ContainerResponse;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ws.rs.*;
@@ -145,7 +145,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     public String getSubscription(@PathParam("itemId") long itemId) {
         if (isAuthenticatedUser()) {
             Topic account = accesscontrol.getUsernameTopic();
-            log.info("Checking subscription for user \"" + account.getSimpleValue() + "\" on item " + itemId);
             return "" + associationExists(SUBSCRIPTION_EDGE, itemId, account.getId());
         }
         return "" + false;
@@ -215,7 +214,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         // 1) create notifications for all "direct" subscribers of this user topic
         String subscribedItemName = (subscribedItem != null) ? subscribedItem.getSimpleValue().toString() : "Unknown";
         log.info("Notifying subscribers for action involving \"" + involvedItem.getSimpleValue()
-                + "\" (" + involvedItem.getType().getSimpleValue() + ", Subscription: " + subscribedItemName);
+                + "\" (" + involvedItem.getType().getSimpleValue() + ", Subscribed Item Name \"" + subscribedItemName + "\")");
         createNotifications(title, body, actingUsername, involvedItem, subscribedItem);
         // 2) If involvedItem is tagged, create also notifications for all subscribers of these tag topics
         List<RelatedTopic> tags = null; // Defensive access check for tags on this topic type (for indirect subscriptions)
@@ -288,17 +287,12 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         try {
             // Create an "In App" subscription (if not already existent)
             if (!associationExists(SUBSCRIPTION_EDGE, itemId, usernameId)) {
-                Topic username = dmx.getTopic(usernameId);
-                Topic usersWorkspace = dmx.getPrivilegedAccess().getPrivateWorkspace(username.getSimpleValue().toString());
-                dmx.getPrivilegedAccess().runInWorkspaceContext(usersWorkspace.getId(), () -> {
-                    AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
-                        mf.newTopicPlayerModel(usernameId, DEFAULT),
-                        mf.newTopicPlayerModel(itemId, DEFAULT),
-                        mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
-                    Assoc assoc = dmx.createAssoc(model);
-                    log.info("New subscription for user:" + usernameId + " to item:" + itemId);
-                    return assoc;
-                });
+                AssocModel model = mf.newAssocModel(SUBSCRIPTION_EDGE,
+                    mf.newTopicPlayerModel(usernameId, DEFAULT),
+                    mf.newTopicPlayerModel(itemId, DEFAULT),
+                    mf.newChildTopicsModel().addRef(SUBSCRIPTION_TYPE, IN_APP_SUBSCRIPTION));
+                dmx.createAssoc(model);
+                log.info("New subscription for user:" + usernameId + " to item:" + itemId);
             } else {
                 log.info("Subscription already exists between " + usernameId + " and " + itemId);
             }
@@ -346,8 +340,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
             // workspace may be "-1" if someone just created it, and therewith implicitly an "untitled" topicmap gets created
             // which brings us here, if the workspace in which the new workspace is created is watched by someone...
             Topic workspace = dmx.getTopic(workspaceId);
-            log.info("Notifying subscribers about new note created by \"" + actingUsername.getSimpleValue()
-                    + "\" in workspace \"" + workspace.getSimpleValue() + "\"");
             // String mapName = topicmap.getChildTopics().getString(TOPICMAP_NAME);
             notifySubscribers(actingUsername.getSimpleValue() +" noted \"" + note.getSimpleValue() + "\" in workspace \"" + workspace.getSimpleValue() +"\"",
                     actingUsername.getSimpleValue() +" noted \"" + note.getSimpleValue() + "\" in workspace \""+ workspace.getSimpleValue() +"\"",
@@ -465,6 +457,7 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                         model.createPlayerModel(DEFAULT),
                         mf.newTopicPlayerModel(username.getId(), DEFAULT));
                 dmx.createAssoc(recipientModel);
+                log.info("Created notification for " + username.getSimpleValue() + " with title " + notification.getSimpleValue());
                 return notification;
             });
         } catch (Exception ex) {
