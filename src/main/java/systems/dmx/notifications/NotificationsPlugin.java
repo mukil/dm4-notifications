@@ -439,8 +439,8 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     private void createNotificationTopic(final Topic username, final String title, final String text,
             final long actingUsername, final DMXObject involvedItem, final DMXObject subscribedItem) {
         try {
-            Topic usersWorkspace = dmx.getPrivilegedAccess().getPrivateWorkspace(username.getSimpleValue().toString());
-            dmx.getPrivilegedAccess().runInWorkspaceContext(usersWorkspace.getId(), () -> {
+            /** Topic usersWorkspace = dmx.getPrivilegedAccess().getPrivateWorkspace(username.getSimpleValue().toString());
+            dmx.getPrivilegedAccess().runInWorkspaceContext(usersWorkspace.getId(), () -> { **/
                 // 1) Create notification topic
                 ChildTopicsModel message = mf.newChildTopicsModel()
                         .set(NOTIFICATION_SEEN, false)
@@ -457,9 +457,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
                         model.createPlayerModel(DEFAULT),
                         mf.newTopicPlayerModel(username.getId(), DEFAULT));
                 dmx.createAssoc(recipientModel);
-                log.info("Created notification for " + username.getSimpleValue() + " with title " + notification.getSimpleValue());
-                return notification;
-            });
+                log.info("Created notification for " + username.getSimpleValue() + " with title \"" + notification.getSimpleValue() + "\"");
+               // return notification;
+            // });
         } catch (Exception ex) {
             throw new RuntimeException("Creating notification for user "+username.getSimpleValue()+" failed", ex);
         }
