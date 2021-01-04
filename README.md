@@ -37,15 +37,20 @@ When logged in you find your notifications behind the Envelope-icon in the upper
 DMX 5.1 is a platform for collaboration and knowledge management.
 https://github.com/dmx-systems/dmx-platform
 
-## GNU AGPL Public License
+## License
 
-DMX Notifications is available freely under the GNU Affero General Public License, version 3 or later (see [License](https://git.dmx.systems/dmx-plugins/dmx-sign-up/-/blob/master/LICENSE)).
+DMX Notifications is available freely under the GNU Affero General Public License, version 3 or later (see [License](https://git.dmx.systems/dmx-plugins/dmx-notifications/-/blob/master/LICENSE)).
 
 ## Version History
 
-**2.0**, UPCOMING
+**2.0.0**, Jan 04, 2021
 
-* Data model and backend compatible with DMX 5.0
+* Data model and backend compatible with DMX 5.1
+* Rewritten webclient integration with context commands, envelope icon and a badge indicating unread notifications
+* New GUI to list, mark, reveal and delete notifications
+* Completely revised notification titles
+* "Diffs" upon Note edits are currently not supported (see https://git.dmx.systems/dmx-plugins/dmx-notifications/-/issues/11)
+* Your subscriptions and notifications may be READ-able for other users (depending on their workspace assignment)
 
 **1.2**, Aug 11, 2017
 
