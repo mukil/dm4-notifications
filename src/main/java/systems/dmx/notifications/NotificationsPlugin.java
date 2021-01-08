@@ -1,7 +1,6 @@
 package systems.dmx.notifications;
 
 
-import com.sun.jersey.spi.container.ContainerResponse;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -282,7 +281,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
 
     // ---------------------------------------------------------------------------------------------- Private Methods
 
-    @Transactional
     private void subscribeInApp(long usernameId, long itemId) {
         try {
             // Create an "In App" subscription (if not already existent)
@@ -301,7 +299,6 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
 
-    @Transactional
     private void unsubscribe(long usernameId, long itemId) {
         List<Assoc> assocs = dmx.getAssocs(usernameId, itemId, SUBSCRIPTION_EDGE);
         Iterator<Assoc> iterator = assocs.iterator();
