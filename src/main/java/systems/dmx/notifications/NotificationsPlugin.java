@@ -22,6 +22,8 @@ import systems.dmx.core.model.AssocModel;
 import systems.dmx.core.model.ChildTopicsModel;
 import systems.dmx.core.model.TopicModel;
 import systems.dmx.core.osgi.PluginActivator;
+import systems.dmx.core.service.ChangeReport;
+import systems.dmx.core.service.ChangeReport.Change;
 import systems.dmx.core.service.Inject;
 import systems.dmx.core.service.Transactional;
 import systems.dmx.core.service.event.PostCreateAssoc;
@@ -29,6 +31,7 @@ import systems.dmx.core.service.event.PostCreateTopic;
 import systems.dmx.core.service.event.PostUpdateTopic;
 import systems.dmx.core.util.DMXUtils;
 import static systems.dmx.events.Constants.EVENT;
+import systems.dmx.notes.Constants;
 import static systems.dmx.notes.Constants.NOTE;
 import static systems.dmx.notifications.NotificationsService.INVOLVED_ITEM_ID;
 import static systems.dmx.notifications.NotificationsService.NOTIFICATION;
@@ -85,9 +88,9 @@ public class NotificationsPlugin extends PluginActivator implements Notification
     }
 
     @Override
-    public void postUpdateTopic(Topic topic, TopicModel tm, TopicModel tm1) {
+    public void postUpdateTopic(Topic topic, ChangeReport report, TopicModel updateModel) {
         if (topic.getTypeUri().equals(NOTE) || topic.getTypeUri().equals(EVENT)) {
-            notifyTopicSubscribersAboutChangeset(topic, tm, tm1);
+            notifyNoteTopicSubscribersAboutChangeset(topic, report);
         }
     }
 
@@ -308,14 +311,17 @@ public class NotificationsPlugin extends PluginActivator implements Notification
         }
     }
     
-    private void notifyTopicSubscribersAboutChangeset(Topic topicUpdated, TopicModel tm1, TopicModel tm2) {
+    private void notifyNoteTopicSubscribersAboutChangeset(Topic topicUpdated, ChangeReport report) {
         Topic actingUsername = accesscontrol.getUsernameTopic();
-        log.info("TopicModel 1: " + tm1.toJSON().toString() + ", TopicModel 2: " + tm2.toJSON().toString());
+        List<Change> noteChanges = report.getChanges(Constants.NOTE_TEXT);
+        String changeDescr = "";
+        for (Change noteChange : noteChanges) {
+            changeDescr = "<h2>New Text</h2>" + noteChange.newValue.getSimpleValue();
+            changeDescr += "<h2>Old Text</h2>" + noteChange.oldValue.getSimpleValue();
+        }
         // The following limitation is SAFE as long (see Line 282) as we just support subscriptions on "Note" topics
-        notifySubscribers(actingUsername.getSimpleValue() + " edited "
-                + topicUpdated.getType().getSimpleValue() + " \"" + topicUpdated.getSimpleValue(), "\""+actingUsername.getSimpleValue() +"\" edited "
-                + topicUpdated.getType().getSimpleValue() + " \"" + topicUpdated.getSimpleValue() + "\"",
-            actingUsername.getId(), topicUpdated, null);
+        notifySubscribers(actingUsername.getSimpleValue() + " edited " + topicUpdated.getType().getSimpleValue()
+                + " \"" + topicUpdated.getSimpleValue(), changeDescr, actingUsername.getId(), topicUpdated, null);
     }
 
     private void notifyWorkspaceSubscribersAboutNewEvent(Topic event, long workspaceId) {

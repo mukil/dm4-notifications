@@ -12,11 +12,8 @@
             :key="index" type="primary"
             :color="colorType(notification)"
             :timestamp="dateTime(notification)">
-            <h3>{{notification.children['dmx.notification_body'].value}}</h3>
-            <!--div class="notification-body>
-                <p>{{notification.children['dmx.notification_body'].value}}</p>
-                <p>Performed by {{notification.children['dmx.accesscontrol.username'].value}}</p>
-            </div-->
+            <h3>{{notification.children['dmx.notification_title'].value}}</h3>
+            <div class="notification-body" v-html="notification.children['dmx.notification_body'].value"></div>
             <el-button-group name="message-commands">
                 <el-button @click="revealTopic(notification)" icon="el-icon-top-left">Reveal</el-button>
                 <el-button v-if="!notificationSeen(notification)" @click="markNotificationAsSeen(notification)" icon="el-icon-edit">Mark as seen</el-button>

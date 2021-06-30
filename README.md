@@ -34,7 +34,7 @@ When logged in you find your notifications behind the Envelope-icon in the upper
 
 ## Requirements
 
-DMX 5.1 is a platform for collaboration and knowledge management.
+DMX 5.2 is a platform for collaboration and knowledge management.
 https://github.com/dmx-systems/dmx-platform
 
 ## License
@@ -42,6 +42,11 @@ https://github.com/dmx-systems/dmx-platform
 DMX Notifications is available freely under the GNU Affero General Public License, version 3 or later (see [License](https://git.dmx.systems/dmx-plugins/dmx-notifications/-/blob/master/LICENSE)).
 
 ## Version History
+
+**2.0.1**, Upcoming
+
+* Adapted to be compatible with DMX 5.2
+* Support for display new and old value on note edits is back
 
 **2.0.0**, Jan 04, 2021
 
